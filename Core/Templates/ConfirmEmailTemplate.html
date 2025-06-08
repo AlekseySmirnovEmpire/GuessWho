@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтверждение email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7f7f7;
+            text-align: center;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .logo {
+            max-width: 150px;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+        }
+        p {
+            margin: 15px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Подтверждение регистрации</h1>
+    </div>
+
+    <p>Здравствуйте, {{UserName}}!</p>
+
+    <p>Благодарим вас за регистрацию в "Guess Who". Для завершения регистрации, пожалуйста, подтвердите ваш email:</p>
+
+    <a href="{{ConfirmationLink}}" class="button">Подтвердить email</a>
+
+    <p>Если вы не регистрировались в Guess Who, пожалуйста, проигнорируйте это письмо.</p>
+
+    <div class="footer">
+        <img src="{{LogoUrl}}" alt="RusEmpire" class="logo" />
+        <p>RusEmpire © {{CurrentYear}}</p>
+        <p><small>Это письмо отправлено автоматически, пожалуйста, не отвечайте на него.</small></p>
+    </div>
+</div>
+</body>
+</html>

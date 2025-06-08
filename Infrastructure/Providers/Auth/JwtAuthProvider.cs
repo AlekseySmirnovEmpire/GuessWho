@@ -1,11 +1,17 @@
-﻿using Core.Models.Auth;
+﻿using Core.Database.Email;
+using Core.Models.Auth;
 using Core.Providers;
 using Core.Services;
 using Core.Services.Interfaces;
 
 namespace Infrastructure.Providers.Auth;
 
-public class JwtAuthProvider(UserService userService, ITokenService tokenService) : IAuthProvider
+public class JwtAuthProvider(
+    UserService userService, 
+    ITokenService tokenService, 
+    IEmailService emailService, 
+    IEmailTemplatingService emailTemplatingService) 
+    : IAuthProvider
 {
     public TokenModel Login(LoginModel? loginModel)
     {
@@ -34,7 +40,13 @@ public class JwtAuthProvider(UserService userService, ITokenService tokenService
 
     public UserCreateResponseModel SignUp(SignUpModel? signUpModel)
     {
-        userService.CreateUser(signUpModel);
+        var user = userService.CreateUser(signUpModel);
+
+        emailService.PutNewMessageInQueue(new EmailSendingQueue(
+            "Подтверждение регистрации",
+            emailTemplatingService.GenerateEmailTemplate(SubstitutionEmailTemplates.ConfirmEmail, user),
+            user.Email,
+            EmailPriority.Medium));
 
         return new UserCreateResponseModel();
     }

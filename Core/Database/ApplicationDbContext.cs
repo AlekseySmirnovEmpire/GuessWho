@@ -1,4 +1,5 @@
-﻿using Core.Database.Users;
+﻿using Core.Database.Email;
+using Core.Database.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -7,6 +8,8 @@ namespace Core.Database;
 public class ApplicationDbContext(DbContextOptions options) : DbContext(options)
 {
     public DbSet<User> Users { get; set; }
+
+    public DbSet<EmailSendingQueue> EmailSendingQueue { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,6 +23,13 @@ public class ApplicationDbContext(DbContextOptions options) : DbContext(options)
             user.Property(u => u.Role)
                 .HasConversion(new EnumToStringConverter<UserRole>())
                 .HasMaxLength(15);
+        });
+
+        modelBuilder.Entity<EmailSendingQueue>(email =>
+        {
+            email.Property(e => e.Priority)
+                .HasConversion(new EnumToStringConverter<EmailPriority>())
+                .HasMaxLength(10);
         });
     }
 }

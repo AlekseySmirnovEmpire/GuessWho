@@ -15,7 +15,7 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
     public void SetRefreshToken(long userId, string token) =>
         repository.Update(u => u.Id == userId, sp => sp.SetProperty(u => u.JwtToken, token));
 
-    public void CreateUser(SignUpModel? userModel)
+    public User CreateUser(SignUpModel? userModel)
     {
         if (userModel == null ||
             string.IsNullOrEmpty(userModel.NickName) ||
@@ -35,10 +35,13 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
                     userModel.Email));
 
             logger.LogInformation("Создан пользователь с ID: '{Id}'", user!.Id);
+
+            return user;
         }
         catch (Exception ex)
         {
             logger.LogError("Ошибка при создании пользователя: {0}", ex.Message);
+
             throw new Exception("Не удалось создать пользователя!");
         }
     }

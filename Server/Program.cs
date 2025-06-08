@@ -3,6 +3,7 @@ using Core.Providers;
 using Core.Repositories;
 using Core.Services;
 using Core.Services.Interfaces;
+using Core.Settings;
 using Core.Utils;
 using Infrastructure.Providers.Auth;
 using Infrastructure.Repositories;
@@ -58,19 +59,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 #region Контроллеры
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(
-        policy =>
-        {
-            policy.WithOrigins(Environment.GetEnvironmentVariable("CLIENT_URL")!)
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
-});
 builder.Services.AddScoped<AuthController>();
 
 #endregion
@@ -86,23 +74,41 @@ builder.Services.AddScoped<IAuthProvider, JwtAuthProvider>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddScoped<IEmailTemplatingService, SubstitutionEmailTemplatingService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
 #endregion
 
 #region Репозитории
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IEmailSendingQueueRepository, EmailSendingQueueRepository>();
 
 #endregion
 
 #region Сервисы для приложения
 
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(Environment.GetEnvironmentVariable("CLIENT_URL")!)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+#endregion
+
+#region Синглтоны
+
+builder.Services.AddSingleton<EmailSettings>();
 
 #endregion
 
