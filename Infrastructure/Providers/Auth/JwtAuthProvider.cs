@@ -1,16 +1,18 @@
 ﻿using Core.Database.Email;
+using Core.Database.Users;
 using Core.Models.Auth;
 using Core.Providers;
 using Core.Services;
 using Core.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Providers.Auth;
 
 public class JwtAuthProvider(
-    UserService userService, 
-    ITokenService tokenService, 
-    IEmailService emailService, 
-    IEmailTemplatingService emailTemplatingService) 
+    UserService userService,
+    ITokenService tokenService,
+    IEmailService emailService,
+    IEmailTemplatingService emailTemplatingService)
     : IAuthProvider
 {
     public TokenModel Login(LoginModel? loginModel)
@@ -21,7 +23,7 @@ public class JwtAuthProvider(
         var user = userService.FindByEmail(loginModel.Email);
         if (user == null) throw new Exception("Неверно введены данные!");
 
-        if (!PasswordService.Validate(loginModel.Password, user.PasswordHash)) 
+        if (!PasswordService.Validate(loginModel.Password, user.PasswordHash))
             throw new Exception("Неверно введён пароль!");
 
         if (!user.IsActive) throw new Exception("Ваш аккаунт временно деактивирован или не был подтверждён!");
@@ -73,5 +75,18 @@ public class JwtAuthProvider(
             throw new UnauthorizedAccessException("Некорректный токен!");
 
         return model;
+    }
+
+    public User GetCurrentUser(HttpContext httpContext)
+    {
+        var token = httpContext.Request.Headers.Authorization.ToString()
+            .Replace("Bearer", string.Empty)
+            .Trim();
+        var user = tokenService.Validate(token);
+
+        if (string.IsNullOrEmpty(token) || user == null)
+            throw new UnauthorizedAccessException();
+
+        return user;
     }
 }

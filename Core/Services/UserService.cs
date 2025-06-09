@@ -50,4 +50,41 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
         repository.Update(
             u => u.Id == userId,
             sp => sp.SetProperty(u => u.JwtToken, (string?)null));
+
+    public bool ConfirmUserEmail(string? token)
+    {
+        ArgumentNullException.ThrowIfNull(token);
+
+        var claims = EmailVerificationService.VerifyLink(token);
+        ArgumentNullException.ThrowIfNull(claims);
+
+        var user = repository.Find(u => u.Id == claims.Id);
+        ArgumentNullException.ThrowIfNull(user);
+
+        if (user.ConfirmedEmail) return false;
+
+        repository.Update(
+            u => u.Id == user.Id,
+            sp => sp.SetProperty(u => u.ConfirmedEmail, true));
+
+        return true;
+    }
+
+    public bool ConfirmUserByModerator(long userId, User? moderator)
+    {
+        ArgumentNullException.ThrowIfNull(moderator);
+
+        if (!moderator.CheckAccess(UserRole.Moderator)) throw new UnauthorizedAccessException();
+
+        var user = repository.Find(u => u.Id == userId);
+        ArgumentNullException.ThrowIfNull(user);
+
+        if (user.ConfirmedByModerator) return false;
+
+        repository.Update(
+            u => u.Id == user.Id,
+            sp => sp.SetProperty(u => u.ConfirmedByModerator, true));
+
+        return true;
+    }
 }

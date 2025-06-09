@@ -50,4 +50,6 @@ public class User
         Rating = 1000;
         Role = UserRole.Player;
     }
+
+    public bool CheckAccess(UserRole minimumRole) => (ushort)minimumRole <= (ushort)Role;
 }
