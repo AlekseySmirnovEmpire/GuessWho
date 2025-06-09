@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrations", "Migrations\Mi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobsBackground", "JobsBackground\JobsBackground.csproj", "{EF8DE3F9-A28D-4D2D-AEC6-EF1588415F7D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{47A3FB5C-8D22-4105-A5DD-3001A2733556}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{EF8DE3F9-A28D-4D2D-AEC6-EF1588415F7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF8DE3F9-A28D-4D2D-AEC6-EF1588415F7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF8DE3F9-A28D-4D2D-AEC6-EF1588415F7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47A3FB5C-8D22-4105-A5DD-3001A2733556}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47A3FB5C-8D22-4105-A5DD-3001A2733556}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47A3FB5C-8D22-4105-A5DD-3001A2733556}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47A3FB5C-8D22-4105-A5DD-3001A2733556}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

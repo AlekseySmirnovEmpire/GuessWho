@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guess Who</title>
+    <base href="/" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link href="manifest.json" rel="manifest" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <link rel="icon" type="image/png" href="icon-192.png" />
+    <link href="Client.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="app">
+</div>
+<div id="blazor-error-ui">
+    Ошибка подключения к сети.
+    <a href="" class="reload">Переподключиться</a>
+    <a class="dismiss">🗙</a>
+</div>
+<script src="_framework/blazor.webassembly.js"></script>
+<div id="app-loading">
+    <img src="icon-192.png" class="loading-logo" alt="Logo" />
+    <div class="loading-spinner"></div>
+    <div id="loading-humor" class="loading-text">
+        Загружаем самые смешные шутки...
+    </div>
+</div>
+<script>
+    window.addEventListener('load', () => {
+        const humor = [
+            'You can run, but you will never escape',
+            'Камень я не дам!',
+            'Тебя даже вчерашний шторм не разбудил',
+            'Trespassers will be shot survivors will be shot again',
+            'GM "замечательный" человек',
+            '♂300$♂',
+            '♂Do you like what u see?♂'
+        ];
+
+        const humorElement = document.getElementById('loading-humor');
+        humorElement.textContent = humor[Math.floor(Math.random() * humor.length)];
+
+        const loadingElement = document.getElementById('app-loading');
+        loadingElement.style.opacity = '0';
+        setTimeout(() => {
+            loadingElement.style.display = 'none';
+        }, 500);
+    });
+</script>
+<script>navigator.serviceWorker.register('service-worker.js');</script>
+</body>
+
+</html>
