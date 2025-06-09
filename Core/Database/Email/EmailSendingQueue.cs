@@ -19,6 +19,8 @@ public class EmailSendingQueue
 
     public DateTime? SendAt { get; init; }
 
+    public bool WithError { get; set; }
+
     public EmailSendingQueue(string title, string body, string email, EmailPriority priority)
     {
         Title = title;
@@ -28,7 +30,7 @@ public class EmailSendingQueue
         CreatedAt = DateTime.Now;
     }
 
-    [Obsolete(message:"ONLY EF", error: true)]
+    [Obsolete(message: "ONLY EF", error: true)]
     public EmailSendingQueue()
     {
     }

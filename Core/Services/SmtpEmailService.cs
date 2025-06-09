@@ -24,7 +24,7 @@ public class SmtpEmailService(
     public async Task SendMessagesFromQueue()
     {
         var dataToSend = repository
-            .FindList(esq => !esq.SendAt.HasValue)
+            .FindList(esq => !esq.SendAt.HasValue && !esq.WithError)
             .OrderBy(esq => esq.Priority)
             .Take(5)
             .ToList();
@@ -44,11 +44,15 @@ public class SmtpEmailService(
         }
 
         if (updated.Count != 0)
-        {
             repository.Update(
                 esq => updated.Contains(esq.Id),
                 sp => sp.SetProperty(esq => esq.SendAt, DateTime.Now));
-        }
+
+        var withErrors = dataToSend.ExceptBy(updated, esq => esq.Id).Select(esq => esq.Id).ToList();
+        if (withErrors.Count != 0)
+            repository.Update(
+                esq => withErrors.Contains(esq.Id),
+                sp => sp.SetProperty(esq => esq.WithError, true));
     }
 
     private async Task Send(EmailSendingQueue data)
