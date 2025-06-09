@@ -1,3 +1,4 @@
+using BackgroundJobs.Jobs;
 using Core.Database;
 using Core.Managers;
 using Core.Providers;
@@ -7,14 +8,13 @@ using Core.Services.Interfaces;
 using Core.Settings;
 using Core.Utils;
 using Infrastructure.Managers;
-using Infrastructure.Providers.Auth;
 using Infrastructure.Providers.MessageBus;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using NLog.Targets;
 using NLog.Web;
-using Server.Controllers;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,79 +60,41 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 #endregion
 
-#region Контроллеры
+builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddScoped<AuthController>();
-
-#endregion
-
-#region Провайдеры
-
-builder.Services.AddScoped<IAuthProvider, JwtAuthProvider>();
-
-#endregion
-
-#region Сервисы
-
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<JwtTokenService>();
-builder.Services.AddScoped<ITokenService, JwtTokenService>();
-builder.Services.AddScoped<IEmailTemplatingService, SubstitutionEmailTemplatingService>();
+builder.Services.AddScoped<IEmailSendingQueueRepository, EmailSendingQueueRepository>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
-#endregion
-
-#region Репозитории
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IEmailSendingQueueRepository, EmailSendingQueueRepository>();
-
-#endregion
-
-#region Сервисы для приложения
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddLogging();
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins(Environment.GetEnvironmentVariable("CLIENT_URL")!)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
-
-#endregion
-
-#region Синглтоны
-
-builder.Services.AddSingleton<EmailSettings>();
 builder.Services.AddSingleton<IMessageBusProvider, RedisMessageBusProvider>();
 builder.Services.AddSingleton<IMessageBusManager, MessageBusManager>();
+builder.Services.AddSingleton<EmailSettings>();
 
-#endregion
+builder.Services.AddQuartz(q =>
+{
+    // Регистрируем ваши джобы
+    q.AddJob<EmailSendingJob>(j => j
+        .WithIdentity(nameof(EmailSendingJob))
+        .StoreDurably()
+    );
+
+    // Настройка триггера
+    q.AddTrigger(t => t
+        .ForJob(nameof(EmailSendingJob))
+        .WithIdentity(nameof(EmailSendingJob))
+        .WithSimpleSchedule(s => s
+            .WithIntervalInSeconds(15) // Интервал выполнения
+            .RepeatForever()
+        )
+        .StartNow()
+    );
+});
+builder.Services.AddQuartzHostedService(q => 
+{
+    q.WaitForJobsToComplete = true;
+    q.StartDelay = TimeSpan.FromSeconds(5); // Задержка перед стартом
+});
 
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-#region Старт сервера
 
 try
 {
@@ -150,5 +112,3 @@ finally
 {
     LogManager.Shutdown();
 }
-
-#endregion

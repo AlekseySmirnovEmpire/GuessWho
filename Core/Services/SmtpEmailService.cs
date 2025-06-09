@@ -61,7 +61,6 @@ public class SmtpEmailService(
         smtpClient.EnableSsl = true;
         smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
         smtpClient.UseDefaultCredentials = false;
-        smtpClient.Timeout = 30000;
         smtpClient.Credentials = new NetworkCredential(
             emailSettings.SmtpLogin,
             emailSettings.SmtpPassword);
