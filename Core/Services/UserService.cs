@@ -1,5 +1,6 @@
 ﻿using Core.Database.Users;
 using Core.Models.Auth;
+using Core.Models.Users;
 using Core.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -84,6 +85,25 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
         repository.Update(
             u => u.Id == user.Id,
             sp => sp.SetProperty(u => u.ConfirmedByModerator, true));
+
+        return true;
+    }
+
+    public bool ResetUserPassword(ResetPasswordModel? model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var claims = EmailVerificationService.VerifyLink(model.Token);
+        ArgumentNullException.ThrowIfNull(claims);
+
+        var user = repository.Find(u => u.Id == claims.Id);
+        ArgumentNullException.ThrowIfNull(user);
+
+        repository.Update(
+            u => u.Id == user.Id,
+            sp => sp.SetProperty(
+                u => u.PasswordHash,
+                PasswordService.GenerateHashPassword(model.Password)));
 
         return true;
     }

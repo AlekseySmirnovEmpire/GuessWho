@@ -28,6 +28,24 @@ public static class EmailVerificationService
         // Кодирование в Base64Url
         return $"{Environment.GetEnvironmentVariable("CLIENT_URL")}/confirm?token={Base64UrlEncode(payload)}";
     }
+    
+    public static string GenerateResetPasswordLink(User user)
+    {
+        var claims = new UserClaims(user);
+
+        // Сериализация модели
+        var json = JsonSerializer.Serialize(claims);
+
+        // Создание подписи
+        var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(SecretKey));
+        var signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(json)));
+
+        // Объединение данных и подписи
+        var payload = $"{json}.{signature}";
+
+        // Кодирование в Base64Url
+        return $"{Environment.GetEnvironmentVariable("CLIENT_URL")}/password/reset?token={Base64UrlEncode(payload)}";
+    }
 
     public static UserClaims? VerifyLink(string token)
     {

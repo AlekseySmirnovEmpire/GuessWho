@@ -8,7 +8,8 @@ public class SubstitutionEmailTemplatingService : IEmailTemplatingService
     private static readonly Dictionary<SubstitutionEmailTemplates, string> Templates =
         new()
         {
-            [SubstitutionEmailTemplates.ConfirmEmail] = "ConfirmEmailTemplate.html"
+            [SubstitutionEmailTemplates.ConfirmEmail] = "ConfirmEmailTemplate.html",
+            [SubstitutionEmailTemplates.ResetPassword] = "ResetPasswordTemplate.html",
         };
 
     public string GenerateEmailTemplate<T>(SubstitutionEmailTemplates templateName, T model)
@@ -38,6 +39,11 @@ public class SubstitutionEmailTemplatingService : IEmailTemplatingService
                 .Replace("{{ConfirmationLink}}", EmailVerificationService.GenerateVerificationLink(userModel))
                 .Replace("{{LogoUrl}}", "https://example.com/logo.png")
                 .Replace("{{CurrentYear}}", DateTime.Now.Year.ToString()),
+            SubstitutionEmailTemplates.ResetPassword when model is User userModel => template
+                .Replace("{{UserName}}", userModel.NickName)
+                .Replace("{{ResetPasswordLink}}", EmailVerificationService.GenerateResetPasswordLink(userModel))
+                .Replace("{{LogoUrl}}", "https://example.com/logo.png")
+                .Replace("{{CurrentYear}}", DateTime.Now.Year.ToString()),
             _ => throw new ArgumentException($"Unsupported template or model type: {templateName}")
         };
     }
@@ -45,5 +51,6 @@ public class SubstitutionEmailTemplatingService : IEmailTemplatingService
 
 public enum SubstitutionEmailTemplates
 {
-    ConfirmEmail
+    ConfirmEmail,
+    ResetPassword
 }
