@@ -168,6 +168,23 @@ code {
     50% { transform: translateY(-10px); }
 }
 
+.home-page .btn {
+    display: inline-block;
+    padding: 15px 30px;
+    margin-top: 30px;
+    background: #EF0027;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    width: 300px;
+}
+
+.home-page .btn:hover {
+    background: #FF003F;
+}
+
 /*@media (prefers-color-scheme: light) {*/
 /*    #app-loading {*/
 /*        background: #121212;*/
