@@ -1,6 +1,8 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Guess Who</a>
+        <a class="navbar-brand" href="">
+            <img src="img/guess-who-logo.png" style="height: 29px;" alt=""/> Веб игра
+        </a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -16,12 +18,17 @@
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Лобби
+                <i class="fa-solid fa-dice fa-lg"></i> Лобби
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Модерирование
+                <i class="fa-solid fa-trophy fa-lg"></i> Рейтинг
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="">
+                <i class="fa-solid fa-screwdriver-wrench fa-lg"></i> Модерирование
             </NavLink>
         </div>
     </nav>

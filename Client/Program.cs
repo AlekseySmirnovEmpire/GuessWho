@@ -21,13 +21,5 @@ builder.Services.AddBlazoredLocalStorage(config =>
     config.JsonSerializerOptions.ReadCommentHandling = JsonCommentHandling.Skip;
     config.JsonSerializerOptions.WriteIndented = false;
 });
-builder.Services.AddScoped(sp =>
-{
-    var navigationManager = sp.GetRequiredService<NavigationManager>();
-    return new HttpClient
-    {
-        BaseAddress = new Uri(Environment.GetEnvironmentVariable("SERVER_URL") ?? string.Empty)
-    };
-});
 
 await builder.Build().RunAsync();
