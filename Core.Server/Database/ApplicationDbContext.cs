@@ -1,9 +1,11 @@
 ﻿using Core.Database.Email;
-using Core.Database.Users;
+using Core.Models.Users;
+using Core.Server.Database.Email;
+using Core.Server.Database.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Core.Database;
+namespace Core.Server.Database;
 
 public class ApplicationDbContext(DbContextOptions options) : DbContext(options)
 {

@@ -1,9 +1,9 @@
-using Core.Database;
-using Core.Managers;
-using Core.Providers;
-using Core.Repositories;
-using Core.Services;
-using Core.Services.Interfaces;
+using Core.Server.Database;
+using Core.Server.Managers;
+using Core.Server.Providers;
+using Core.Server.Repositories;
+using Core.Server.Services;
+using Core.Server.Services.Interfaces;
 using Core.Settings;
 using Core.Utils;
 using Infrastructure.Managers;

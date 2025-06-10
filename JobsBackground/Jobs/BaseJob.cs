@@ -1,4 +1,4 @@
-﻿using Core.Managers;
+﻿using Core.Server.Managers;
 using Quartz;
 
 namespace BackgroundJobs.Jobs;

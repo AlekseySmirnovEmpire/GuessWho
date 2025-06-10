@@ -1,6 +1,7 @@
-﻿using Core.Database.Users;
+﻿using Core.Models.Users;
+using Core.Server.Database.Users;
 
-namespace Core.Models.Users;
+namespace Core.Server.Models;
 
 public class UserClaims
 {

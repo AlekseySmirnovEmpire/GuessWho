@@ -1,7 +1,7 @@
-﻿using Core.Database.Users;
-using Core.Services.Interfaces;
+﻿using Core.Server.Database.Users;
+using Core.Server.Services.Interfaces;
 
-namespace Core.Services;
+namespace Core.Server.Services;
 
 public class SubstitutionEmailTemplatingService : IEmailTemplatingService
 {

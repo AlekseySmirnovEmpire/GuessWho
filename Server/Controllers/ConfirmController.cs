@@ -1,6 +1,6 @@
 ﻿using Core.Models.Users;
-using Core.Providers;
-using Core.Services;
+using Core.Server.Providers;
+using Core.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 using Server.Filters;
 

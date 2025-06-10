@@ -2,13 +2,14 @@
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Core.Database.Users;
 using Core.Models.Auth;
 using Core.Models.Users;
-using Core.Services.Interfaces;
+using Core.Server.Database.Users;
+using Core.Server.Models;
+using Core.Server.Services.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Core.Services;
+namespace Core.Server.Services;
 
 public class JwtTokenService(UserService userService) : ITokenService
 {

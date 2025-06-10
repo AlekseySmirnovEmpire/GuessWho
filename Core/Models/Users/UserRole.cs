@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Text.Json.Serialization;
 
-namespace Core.Database.Users;
+namespace Core.Models.Users;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum UserRole

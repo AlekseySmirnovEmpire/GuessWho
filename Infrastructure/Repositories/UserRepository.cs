@@ -1,7 +1,8 @@
 ﻿using System.Linq.Expressions;
 using Core.Database;
-using Core.Database.Users;
-using Core.Repositories;
+using Core.Server.Database;
+using Core.Server.Database.Users;
+using Core.Server.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 

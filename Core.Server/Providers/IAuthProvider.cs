@@ -1,8 +1,8 @@
-﻿using Core.Database.Users;
-using Core.Models.Auth;
+﻿using Core.Models.Auth;
+using Core.Server.Database.Users;
 using Microsoft.AspNetCore.Http;
 
-namespace Core.Providers;
+namespace Core.Server.Providers;
 
 public interface IAuthProvider
 {

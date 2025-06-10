@@ -1,9 +1,10 @@
 ﻿using Core.Database.Email;
-using Core.Database.Users;
 using Core.Models.Auth;
-using Core.Providers;
-using Core.Services;
-using Core.Services.Interfaces;
+using Core.Server.Database.Email;
+using Core.Server.Database.Users;
+using Core.Server.Providers;
+using Core.Server.Services;
+using Core.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Providers.Auth;

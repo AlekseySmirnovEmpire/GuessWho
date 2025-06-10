@@ -1,6 +1,6 @@
 ﻿using Core.Models.MessageBus;
 
-namespace Core.Providers;
+namespace Core.Server.Providers;
 
 public interface IMessageBusProvider
 {

@@ -1,4 +1,4 @@
-﻿namespace Core.Services.Interfaces;
+﻿namespace Core.Server.Services.Interfaces;
 
 public interface IEmailTemplatingService
 {

@@ -1,9 +1,9 @@
 ﻿using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
-using Core.Managers;
 using Core.Models.MessageBus;
-using Core.Providers;
+using Core.Server.Managers;
+using Core.Server.Providers;
 using Infrastructure.Providers.MessageBus;
 
 namespace Infrastructure.Managers;

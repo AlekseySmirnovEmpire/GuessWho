@@ -1,10 +1,11 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Core.Database.Users;
 using Core.Models.Users;
+using Core.Server.Database.Users;
+using Core.Server.Models;
 
-namespace Core.Services;
+namespace Core.Server.Services;
 
 public static class EmailVerificationService
 {

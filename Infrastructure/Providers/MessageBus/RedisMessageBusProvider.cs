@@ -1,5 +1,5 @@
 ﻿using Core.Models.MessageBus;
-using Core.Providers;
+using Core.Server.Providers;
 using StackExchange.Redis;
 
 namespace Infrastructure.Providers.MessageBus;

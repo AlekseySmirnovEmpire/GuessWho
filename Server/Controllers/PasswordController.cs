@@ -1,7 +1,8 @@
 ﻿using Core.Database.Email;
 using Core.Models.Users;
-using Core.Services;
-using Core.Services.Interfaces;
+using Core.Server.Database.Email;
+using Core.Server.Services;
+using Core.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Server.Controllers;

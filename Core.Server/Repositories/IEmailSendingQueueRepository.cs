@@ -1,5 +1,5 @@
-﻿using Core.Database.Email;
+﻿using Core.Server.Database.Email;
 
-namespace Core.Repositories;
+namespace Core.Server.Repositories;
 
 public interface IEmailSendingQueueRepository : IRepository<EmailSendingQueue>;

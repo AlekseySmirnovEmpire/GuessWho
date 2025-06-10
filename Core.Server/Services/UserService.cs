@@ -1,10 +1,10 @@
-﻿using Core.Database.Users;
-using Core.Models.Auth;
+﻿using Core.Models.Auth;
 using Core.Models.Users;
-using Core.Repositories;
+using Core.Server.Database.Users;
+using Core.Server.Repositories;
 using Microsoft.Extensions.Logging;
 
-namespace Core.Services;
+namespace Core.Server.Services;
 
 public class UserService(ILogger<UserService> logger, IUserRepository repository)
 {

@@ -1,7 +1,7 @@
-﻿using Core.Database.Users;
-using Core.Models.Auth;
+﻿using Core.Models.Auth;
+using Core.Server.Database.Users;
 
-namespace Core.Services.Interfaces;
+namespace Core.Server.Services.Interfaces;
 
 public interface ITokenService
 {

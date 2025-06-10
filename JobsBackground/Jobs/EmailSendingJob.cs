@@ -1,5 +1,5 @@
-﻿using Core.Managers;
-using Core.Services.Interfaces;
+﻿using Core.Server.Managers;
+using Core.Server.Services.Interfaces;
 
 namespace BackgroundJobs.Jobs;
 

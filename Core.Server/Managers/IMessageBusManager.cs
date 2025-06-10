@@ -1,4 +1,4 @@
-﻿namespace Core.Managers;
+﻿namespace Core.Server.Managers;
 
 public interface IMessageBusManager
 {

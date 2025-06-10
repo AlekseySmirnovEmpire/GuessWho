@@ -1,7 +1,9 @@
 ﻿using System.Linq.Expressions;
 using Core.Database;
 using Core.Database.Email;
-using Core.Repositories;
+using Core.Server.Database;
+using Core.Server.Database.Email;
+using Core.Server.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 

@@ -1,6 +1,6 @@
-﻿using Core.Database.Email;
+﻿using Core.Server.Database.Email;
 
-namespace Core.Services.Interfaces;
+namespace Core.Server.Services.Interfaces;
 
 public interface IEmailService
 {

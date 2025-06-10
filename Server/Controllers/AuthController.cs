@@ -1,5 +1,5 @@
 ﻿using Core.Models.Auth;
-using Core.Providers;
+using Core.Server.Providers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Server.Controllers;

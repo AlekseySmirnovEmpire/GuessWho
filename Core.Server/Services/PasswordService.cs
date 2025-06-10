@@ -1,4 +1,4 @@
-﻿namespace Core.Services;
+﻿namespace Core.Server.Services;
 
 public class PasswordService
 {

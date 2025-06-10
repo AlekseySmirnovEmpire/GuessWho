@@ -1,12 +1,12 @@
 ﻿using System.Net;
 using System.Net.Mail;
-using Core.Database.Email;
-using Core.Repositories;
-using Core.Services.Interfaces;
+using Core.Server.Database.Email;
+using Core.Server.Repositories;
+using Core.Server.Services.Interfaces;
 using Core.Settings;
 using Microsoft.Extensions.Logging;
 
-namespace Core.Services;
+namespace Core.Server.Services;
 
 public class SmtpEmailService(
     IEmailSendingQueueRepository repository, 

@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Core.Database.Email;
 
-namespace Core.Database.Email;
+namespace Core.Server.Database.Email;
 
 public class EmailSendingQueue
 {
