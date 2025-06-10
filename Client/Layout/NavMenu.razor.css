@@ -65,6 +65,15 @@
     color: white;
 }
 
+.top-row.navbar {
+    background: linear-gradient(rgb(58, 58, 58) 0%, rgb(10, 10, 10) 100%);
+    border-bottom: 1px solid #EF0027;
+}
+
+.collapse.nav-scrollable, .nav-scrollable {
+    background: linear-gradient(rgb(58, 58, 58) 0%, rgb(10, 10, 10) 100%);
+}
+
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;

@@ -1,0 +1,38 @@
+﻿@using System.Text.Json.Serialization
+
+@* <div class="row"> *@
+@*     @if (IsAuth) *@
+@*     { *@
+@*      *@
+@*     } *@
+@*     else *@
+@*     { *@
+@*         <div></div> *@
+@*     } *@
+@* </div> *@
+@* *@
+@* @code { *@
+@*     private bool IsAuth = false; *@
+@*      *@
+@*     protected override async Task OnInitializedAsync() *@
+@*     { *@
+@*         var tokenModel = await LocalStorage.GetItemAsync<TokenModel>("guess-who-auth"); *@
+@*         if (string.IsNullOrEmpty(tokenModel?.Access)) *@
+@*         { *@
+@*             IsAuth = false; *@
+@*              *@
+@*             return; *@
+@*         } *@
+@* *@
+@*          *@
+@*     } *@
+@* *@
+@*     private record TokenModel *@
+@*     { *@
+@*         [JsonPropertyName("access_token")] *@
+@*         public string? Access { get; set; } *@
+@*      *@
+@*         [JsonPropertyName("refresh_token")] *@
+@*         public string? Refresh { get; set; } *@
+@*     } *@
+@* } *@

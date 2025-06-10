@@ -19,7 +19,7 @@ public class SubstitutionEmailTemplatingService : IEmailTemplatingService
 
         // Определяем базовый путь к папке с шаблонами
         var templatesFolder =
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Core", "Templates");
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Core.Shared", "Templates");
 
         // Полный путь к файлу шаблона
         var templatePath = Path.Combine(templatesFolder, templateFileName);
