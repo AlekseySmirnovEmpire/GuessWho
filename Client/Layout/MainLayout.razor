@@ -10,11 +10,18 @@
     }
     <SignInComponent @bind-SignInOpen="_signInOpen" @bind-SignUpOpen="_signUpOpen" ReloadUserChanged="@HandleValue"/>
     <SignUpComponent @bind-SignInOpen="_signInOpen" @bind-SignUpOpen="_signUpOpen"/>
+    <ChangeAvatarComponent @bind-User="_user" @bind-Open="_changeAvatar" @bind-ReloadAvatar="_reloadAvatar"/>
 
     <div class="main-container">
         <main>
             <div class="top-row px-4">
-                <AuthComponent @bind-SignInOpen="_signInOpen" @bind-SignUpOpen="_signUpOpen" @bind-User="_user" ReloadUser="@_reloadUser"/>
+                <AuthComponent 
+                    @bind-SignInOpen="_signInOpen" 
+                    @bind-SignUpOpen="_signUpOpen"
+                    @bind-User="_user" 
+                    ReloadUser="@_reloadUser"
+                    ReloadAvatar="_reloadAvatar"
+                    @bind-ChangeAvatarOpen="_changeAvatar"/>
             </div>
 
             <article class="content px-4">
@@ -33,8 +40,10 @@
 {
     private bool _signInOpen;
     private bool _signUpOpen;
+    private bool _changeAvatar;
     private UserModel? _user;
     private bool _reloadUser;
+    private bool _reloadAvatar;
 
     private async Task HandleValue(bool newValue)
     {

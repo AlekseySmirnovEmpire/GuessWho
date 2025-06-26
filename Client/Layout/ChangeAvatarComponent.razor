@@ -1,0 +1,150 @@
+﻿@using System.Text.Json
+@using System.Text.Json.Nodes
+@using Core.Models.Images
+@using Core.Models.Users
+
+<div class="modal-backdrop @(Open ? "show" : "hide")"
+     @onclick="Close">
+</div>
+
+<div class="modal @(Open ? "show" : "hide")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header no-select">
+                <h3>Изменение аватара</h3>
+                <span class="close-btn" @onclick="Close">×</span>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@this">
+                    <DataAnnotationsValidator/>
+                    <div class="form-group">
+                        <label class="no-select">Изображение:</label>
+                        <InputFile type="file" OnChange="LoadFiles" class="form-control"/>
+                    </div>
+                    @if (_serverError)
+                    {
+                        <div style="color: #EF0027">Ошибка на стороне сервера, повторите попытку позже</div>
+                    }
+                    else if (_progress)
+                    {
+                        <div class="loading-spinner"></div>
+                    }
+                    else if (!string.IsNullOrEmpty(_errorText))
+                    {
+                        <div style="color: #EF0027">@_errorText</div>
+                    }
+                    else if (_success)
+                    {
+                        <div>Изображение успешено загружено!</div>
+                    }
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _serverError;
+    private bool _progress;
+    private string _errorText = string.Empty;
+    private bool _success;
+
+    [Parameter] public UserModel? User { get; set; }
+
+    [Parameter] public EventCallback<UserModel> UserChanged { get; set; }
+
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    
+    [Parameter] public bool ReloadAvatar { get; set; }
+
+    [Parameter] public EventCallback<bool> ReloadAvatarChanged { get; set; }
+
+    private async Task Close()
+    {
+        if (_progress) return;
+
+        _serverError = false;
+        _errorText = string.Empty;
+        _success = false;
+        await OpenChanged.InvokeAsync(false);
+        StateHasChanged();
+    }
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        if (User == null) return;
+
+        _progress = true;
+        _errorText = string.Empty;
+        _serverError = false;
+        _success = false;
+        StateHasChanged();
+
+        try
+        {
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            var allowedContentTypes = new List<string>
+            {
+                "image/jpeg",
+                "image/png",
+                "image/gif"
+            };
+
+            var file = e.File;
+
+            // Проверка типа файла
+            if (!allowedContentTypes.Contains(file.ContentType))
+            {
+                // Показ ошибки пользователю
+                _errorText = $"Недопустимый формат файла. Разрешены только: {string.Join(", ", allowedContentTypes)}";
+
+                return;
+            }
+
+            // Проверка размера файла
+            if (file.Size > maxFileSize)
+            {
+                _errorText = $"Файл слишком большой. Максимальный размер: {maxFileSize / 1024 / 1024}MB";
+
+                return;
+            }
+            
+            // Чтение файла как потока
+            await using var stream = file.OpenReadStream(maxFileSize);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+
+            // Дальнейшая обработка файла...
+            using var response = await Http.PutAsync(
+                "/api/v1/images",
+                new ImageDataModel
+                {
+                    Data = memoryStream.ToArray(),
+                    Type = file.ContentType
+                });
+            if (!response.IsSuccessStatusCode) throw new Exception("ошибка на стороне сервера");
+
+            var body = await JsonSerializer.DeserializeAsync<JsonNode>(await response.Content.ReadAsStreamAsync());
+            if (body == null) throw new Exception("ошибка на стороне сервера");
+
+            var imageId = body["avatarId"]?.GetValue<Guid>();
+            User.ImageId = imageId;
+            await UserChanged.InvokeAsync(User);
+            ReloadAvatar = true;
+            await ReloadAvatarChanged.InvokeAsync(true);
+
+            _success = true;
+        }
+        catch (Exception ex)
+        {
+            _errorText = $"Ошибка при загрузке файла: {ex.Message}";
+        }
+        finally
+        {
+            _progress = false;
+        }
+    }
+
+}

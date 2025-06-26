@@ -4,9 +4,13 @@ namespace Core.Models.Users;
 
 public class UserModel
 {
+    [JsonPropertyName("id")] public long Id { get; init; }
+
     [JsonPropertyName("nickName")] public string NickName { get; init; }
 
     [JsonPropertyName("role")] public UserRole Role { get; init; }
 
     [JsonPropertyName("rating")] public ushort Rating { get; init; }
+
+    [JsonPropertyName("avatarId")] public Guid? ImageId { get; set; }
 }
