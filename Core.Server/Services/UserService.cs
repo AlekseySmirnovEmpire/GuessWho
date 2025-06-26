@@ -121,4 +121,12 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
     public void RemoveOld() =>
         repository.Delete(u => u.CreatedAt <= DateTime.Now.AddDays(-1) &&
                                (!u.ConfirmedByModerator || !u.ConfirmedEmail));
+
+    public void ChangeUserData(ChangeUserData data, long userId)
+    {
+        if (!string.IsNullOrEmpty(data.NickName))
+            repository.Update(
+                u => u.Id == userId, 
+                sp => sp.SetProperty(u => u.NickName, data.NickName));
+    }
 }

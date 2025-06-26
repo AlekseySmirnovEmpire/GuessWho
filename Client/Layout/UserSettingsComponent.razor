@@ -1,0 +1,129 @@
+﻿@using Core.Models.Users
+<div class="modal-backdrop @(Open ? "show" : "hide")"
+     @onclick="Close">
+</div>
+
+<div class="modal @(Open ? "show" : "hide")">
+     <div class="modal-dialog">
+          <div class="modal-content">
+               <div class="modal-header no-select">
+                    <h3>Настройки аккаунта</h3>
+                    <span class="close-btn" @onclick="Close">×</span>
+               </div>
+               <div class="modal-body">
+                    <EditForm Model="@this" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator/>
+                        <div class="form-group">
+                            <label class="no-select">Никнейм:</label>
+                            <InputText @bind-Value="_username" maxlength="255"
+                                       class="@GetUsernameClass()"/>
+                            @if (_username.Length > 255)
+                            {
+                                <div class="invalid-feedback">Никнейм должен быть от 4 до 255 символов</div>
+                            }
+                        </div>
+                        @if (_serverError)
+                        {
+                            <div style="color: #EF0027">Ошибка на стороне сервера, повторите попытку позже</div>
+                        }
+                        else if (_progress)
+                        {
+                            <div class="loading-spinner"></div>
+                        }
+                        else if (!string.IsNullOrEmpty(_errorText))
+                        {
+                            <div style="color: #EF0027">@_errorText</div>
+                            <button type="submit" class="btn btn-primary mt-3" @onclick="HandleSubmit">
+                                Изменить
+                            </button>
+                        }
+                        else if (_success)
+                        {
+                            <div>Данные успешно изменены!</div>
+                            <button type="submit" class="btn btn-primary mt-3" @onclick="HandleSubmit">
+                                Изменить
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-primary mt-3" @onclick="HandleSubmit">
+                                Изменить
+                            </button>
+                        }
+                    </EditForm>
+               </div>
+          </div>
+     </div>
+</div>
+
+@code {
+     private bool _serverError;
+     private bool _progress;
+     private string _errorText = string.Empty;
+     private bool _success;
+     private string _username = string.Empty;
+
+     private string GetUsernameClass() => _username.Length is >= 4 and <= 255 ? "form-control" : "form-control is-invalid";
+
+     [Parameter] public UserModel? User { get; set; }
+
+     [Parameter] public EventCallback<UserModel> UserChanged { get; set; }
+
+     [Parameter] public bool Open { get; set; }
+
+     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+     [Parameter] public bool ReloadUser { get; set; }
+
+     [Parameter] public EventCallback<bool> ReloadUserChanged { get; set; }
+
+     protected override async Task OnInitializedAsync()
+     {
+         _username = User?.NickName ?? string.Empty;
+     }
+
+     private async Task Close()
+     {
+          if (_progress) return;
+
+          _serverError = false;
+          _errorText = string.Empty;
+          _success = false;
+          await OpenChanged.InvokeAsync(false);
+          StateHasChanged();
+     }
+
+     private async Task HandleSubmit()
+     {
+         _progress = true;
+         _serverError = false;
+         _errorText = string.Empty;
+         _success = false;
+
+         try
+         {
+             if(_username != User?.NickName && _username.Length is < 4 or > 255) return;
+
+             using var response = await Http.PostAsync(
+                 "/api/v1/users",
+                 new ChangeUserData
+                 {
+                     NickName = _username != User?.NickName ? _username : null
+                 });
+             if (!response.IsSuccessStatusCode) throw new Exception();
+             
+             _success = true;
+             await ReloadUserChanged.InvokeAsync(true);
+         }
+         catch (Exception ex)
+         {
+             Console.WriteLine(ex);
+             _errorText = "Данные изменить не удалось!";
+         }
+         finally
+         {
+             _progress = false;
+         }
+     }
+
+}
