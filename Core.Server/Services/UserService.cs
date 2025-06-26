@@ -1,4 +1,5 @@
-﻿using Core.Models.Auth;
+﻿using System.Text.RegularExpressions;
+using Core.Models.Auth;
 using Core.Models.Users;
 using Core.Server.Database.Users;
 using Core.Server.Repositories;
@@ -8,8 +9,14 @@ namespace Core.Server.Services;
 
 public class UserService(ILogger<UserService> logger, IUserRepository repository)
 {
-    public User? FindByEmail(string email) =>
-        string.IsNullOrEmpty(email) ? null : repository.Find(u => u.Email == email);
+    public User? FindByEmail(string email)
+    {
+        if (string.IsNullOrEmpty(email)) return null;
+
+        return !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase) 
+            ? null 
+            : repository.Find(u => u.Email == email);
+    }
 
     public User? FindById(long id) => repository.Find(u => u.Id == id);
 
@@ -108,8 +115,7 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
         return true;
     }
 
-    public void RemoveOld() => 
-        repository.Delete(
-            u => u.CreatedAt <= DateTime.Now.AddDays(-1) &&
-                 (!u.ConfirmedByModerator || !u.ConfirmedEmail));
+    public void RemoveOld() =>
+        repository.Delete(u => u.CreatedAt <= DateTime.Now.AddDays(-1) &&
+                               (!u.ConfirmedByModerator || !u.ConfirmedEmail));
 }

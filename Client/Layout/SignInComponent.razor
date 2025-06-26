@@ -77,54 +77,108 @@
 <div class="modal @(SignInOpen && !SignUpOpen ? "show" : "hide")">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header no-select">
-                <h3>Вход</h3>
-                <span class="close-btn" @onclick="Close">×</span>
-            </div>
-            <div class="modal-body">
-                <EditForm Model="@this" OnValidSubmit="@HandleSubmit">
-                    <DataAnnotationsValidator/>
-                    <div class="form-group">
-                        <label class="no-select">Email:</label>
-                        <InputText type="email" @bind-Value="_email" class="@GetEmailClass()"/>
-                        <ValidationMessage For="@(() => _email)"/>
-                        @if (!EmailValid && !string.IsNullOrEmpty(_email))
-                        {
-                            <div class="invalid-feedback">Введите корректный email</div>
-                        }
-                    </div>
-                    <div class="form-group">
-                        <label class="no-select">Пароль:</label>
-                        <InputText type="password" @bind-Value="_password" class="@GetPasswordClass()"/>
-                        <ValidationMessage For="@(() => _password)"/>
-                        @if (!_passwordValid)
-                        {
-                            <div class="invalid-feedback">Поле должно быть не пустым</div>
-                        }
-                    </div>
-                    <div class="form-group">
-                        <label class="no-select">Запомнить меня</label>
-                        <InputCheckbox type="checkbox" @bind-Value="_rememberMe" class="form-control"/>
-                    </div>
-                    @if (_serverError)
+            @if (_resetPassword)
+            {
+                <div class="modal-header no-select">
+                    <span class="close-btn" @onclick="ToggleRefreshPassword">
+                        <i class="fa fas fa-solid fa-arrow-left"></i>
+                    </span>
+                    <h5>Восстановление пароля</h5>
+                </div>
+                <div class="modal-body">
+                    @if (_resetPasswordSuccess)
                     {
-                        <div style="color: #EF0027">Ошибка на стороне сервера, повторите попытку позже</div>
-                    }
-                    else if (_progress)
-                    {
-                        <div class="loading-spinner"></div>
+                        <div>На указаный email (<span style="color: #EF0027; text-decoration: underline">@_emailReset</span>) 
+                            отправлено письмо с дальнейшими действиями</div>
                     }
                     else
                     {
-                        if (_wrongData)
-                        {
-                            <div style="color: #EF0027">Введены неверные данные</div>
-                        }
+                        <EditForm Model="@this" OnValidSubmit="@HandleResetSubmit">
+                            <DataAnnotationsValidator/>
+                            <div class="form-group">
+                                <label class="no-select">Email:</label>
+                                <InputText type="email" @bind-Value="_emailReset" class="@GetEmailResetClass()"/>
+                                <ValidationMessage For="@(() => _emailReset)"/>
+                                @if (!EmailValid && !string.IsNullOrEmpty(_emailReset))
+                                {
+                                    <div class="invalid-feedback">Введите корректный email</div>
+                                }
+                            </div>
+                            @if (_resetServerError)
+                            {
+                                <div style="color: #EF0027">Ошибка на стороне сервера, повторите попытку позже</div>
+                            }
+                            else if (_progressReset)
+                            {
+                                <div class="loading-spinner"></div>
+                            }
+                            else
+                            {
+                                if (_wrongDataReset)
+                                {
+                                    <div style="color: #EF0027">Данный email не зарегистрирован</div>
+                                }
 
-                        <button type="submit" class="btn btn-primary mt-3" @onclick="HandleSubmit">Войти</button>
+                                <button type="submit" class="btn btn-primary mt-3" @onclick="HandleResetSubmit">
+                                    Восстановить
+                                </button>
+                            }
+                        </EditForm>
                     }
-                </EditForm>
-            </div>
+                </div>
+            }
+            else
+            {
+                <div class="modal-header no-select">
+                    <h3>Вход</h3>
+                    <span class="close-btn" @onclick="Close">×</span>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@this" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator/>
+                        <div class="form-group">
+                            <label class="no-select">Email:</label>
+                            <InputText type="email" @bind-Value="_email" class="@GetEmailClass()"/>
+                            <ValidationMessage For="@(() => _email)"/>
+                            @if (!EmailValid && !string.IsNullOrEmpty(_email))
+                            {
+                                <div class="invalid-feedback">Введите корректный email</div>
+                            }
+                        </div>
+                        <div class="form-group">
+                            <label class="no-select">Пароль:</label>
+                            <InputText type="password" @bind-Value="_password" class="@GetPasswordClass()"/>
+                            <ValidationMessage For="@(() => _password)"/>
+                            @if (!_passwordValid)
+                            {
+                                <div class="invalid-feedback">Поле должно быть не пустым</div>
+                            }
+                        </div>
+                        <div class="form-group">
+                            <label class="no-select">Запомнить меня</label>
+                            <InputCheckbox type="checkbox" @bind-Value="_rememberMe" class="form-control"/>
+                        </div>
+                        @if (_serverError)
+                        {
+                            <div style="color: #EF0027">Ошибка на стороне сервера, повторите попытку позже</div>
+                        }
+                        else if (_progress)
+                        {
+                            <div class="loading-spinner"></div>
+                        }
+                        else
+                        {
+                            if (_wrongData)
+                            {
+                                <div style="color: #EF0027">Введены неверные данные</div>
+                            }
+
+                            <button type="submit" class="btn btn-primary mt-3" @onclick="HandleSubmit">Войти</button>
+                            <a class="btn btn-primary mt-3" @onclick="ToggleRefreshPassword">Восстановить пароль</a>
+                        }
+                    </EditForm>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -138,13 +192,25 @@
     private bool _serverError;
     private DotNetObjectReference<SignInComponent>? _dotNetHelper;
     private bool _progress;
+    private bool _resetPassword;
+    private string _emailReset = string.Empty;
+    private bool _resetServerError;
+    private bool _progressReset;
+    private bool _wrongDataReset;
+    private bool _resetPasswordSuccess;
 
     private bool EmailValid => string.IsNullOrEmpty(_email) ||
                                System.Text.RegularExpressions.Regex.IsMatch(
                                    _email,
                                    @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
+    private bool EmailResetValid => string.IsNullOrEmpty(_email) ||
+                                    System.Text.RegularExpressions.Regex.IsMatch(
+                                        _emailReset,
+                                        @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+
     private string GetEmailClass() => EmailValid ? "form-control" : "form-control is-invalid";
+    private string GetEmailResetClass() => EmailResetValid ? "form-control" : "form-control is-invalid";
     private string GetPasswordClass() => _passwordValid ? "form-control" : "form-control is-invalid";
 
     [Parameter] public bool SignInOpen { get; set; }
@@ -159,10 +225,28 @@
 
     private async Task Close()
     {
+        if (_progress || _progressReset) return;
+
         SignInOpen = false;
         _passwordValid = true;
         _serverError = false;
         await SignInOpenChanged.InvokeAsync(false);
+        _resetPassword = false;
+        _wrongDataReset = false;
+        _resetPasswordSuccess = false;
+    }
+
+    private void ToggleRefreshPassword()
+    {
+        if (_progressReset) return;
+
+        _resetPassword = !_resetPassword;
+        if (_resetPassword) return;
+
+        _resetServerError = false;
+        _emailReset = string.Empty;
+        _wrongDataReset = false;
+        _resetPasswordSuccess = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -178,6 +262,41 @@
     public void HandleBackdropClick()
     {
         Close().Wait();
+    }
+
+    private async Task HandleResetSubmit()
+    {
+        if (!EmailResetValid) return;
+
+        try
+        {
+            _progressReset = true;
+            _wrongDataReset = false;
+            _resetPasswordSuccess = false;
+            _resetServerError = false;
+            using var response = await Http.PostAsync<string>(
+                $"/api/v1/password/email?value={_emailReset}",
+                null);
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                _wrongDataReset = true;
+                
+                return;
+            }
+
+            if (response.IsSuccessStatusCode) _resetPasswordSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+
+            _resetServerError = true;
+        }
+        finally
+        {
+            _progressReset = false;
+            StateHasChanged();
+        }
     }
 
     private async Task HandleSubmit()

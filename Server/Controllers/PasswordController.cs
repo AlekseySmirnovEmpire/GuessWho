@@ -39,6 +39,33 @@ public class PasswordController(
             return BadRequest(new { status = false });
         }
     }
+    
+    [Route("email")]
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult SendEmailForResetPassword([FromQuery(Name = "value")] string email)
+    {
+        try
+        {
+            var user = userService.FindByEmail(email);
+            if (user == null) return Unauthorized();
+
+            emailService.PutNewMessageInQueue(new EmailSendingQueue(
+                "Сброс пароля",
+                emailTemplatingService.GenerateEmailTemplate(SubstitutionEmailTemplates.ResetPassword, user),
+                user!.Email,
+                EmailPriority.High));
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.Message);
+
+            return BadRequest(new { status = false });
+        }
+    }
 
     [Route("reset")]
     [HttpPost]
@@ -52,7 +79,8 @@ public class PasswordController(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex.Message);
+            logger.LogError(ex, ex.Message);
+            if (ex is UnauthorizedAccessException) return Unauthorized();
 
             return BadRequest(new { status = false });
         }
