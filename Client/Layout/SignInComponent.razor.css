@@ -90,6 +90,10 @@
     user-select: none;
 }
 
+.close-btn i {
+    width: 15px;
+}
+
 .close-btn:hover {
     color: #333;
 }
@@ -105,7 +109,7 @@
     height: auto;
 }
 
-.modal-body button {
+.modal-body .btn {
     color: #ffffff;
     background: #EF0027;
     border: none;
@@ -115,17 +119,17 @@
     outline: none;
 }
 
-.modal-body button:hover {
+.modal-body .btn:hover {
     background-color: #bd001f; /* Темнее при наведении */
 }
 
-.modal-body button:active {
+.modal-body .btn:active {
     background-color: #000; /* Черный фон при нажатии */
     color: #ffffff; /* Красный текст */
     box-shadow: none; /* Убираем тень */
 }
 
-.modal-body button:focus {
+.modal-body .btn:focus {
     box-shadow: none; /* Убираем синюю рамку при фокусе */
 }
 

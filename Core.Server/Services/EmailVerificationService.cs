@@ -45,7 +45,7 @@ public static class EmailVerificationService
         var payload = $"{json}.{signature}";
 
         // Кодирование в Base64Url
-        return $"{Environment.GetEnvironmentVariable("CLIENT_URL")}/password/reset?token={Base64UrlEncode(payload)}";
+        return $"{Environment.GetEnvironmentVariable("CLIENT_URL")}/reset-password?token={Base64UrlEncode(payload)}";
     }
 
     public static UserClaims? VerifyLink(string token)
