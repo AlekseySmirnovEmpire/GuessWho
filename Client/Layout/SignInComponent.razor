@@ -341,8 +341,13 @@
                 "Guess_Who",
                 await JsonSerializer.DeserializeAsync<TokenModel>(await response.Content.ReadAsStreamAsync()));
             await ReloadUserChanged.InvokeAsync(true);
-
-            await Close();
+            SignInOpen = false;
+            _passwordValid = true;
+            _serverError = false;
+            await SignInOpenChanged.InvokeAsync(false);
+            _resetPassword = false;
+            _wrongDataReset = false;
+            _resetPasswordSuccess = false;
         }
         catch (Exception ex)
         {

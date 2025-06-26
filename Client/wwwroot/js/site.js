@@ -16,3 +16,14 @@ function removeBackdropClickHandler() {
         backdrop.replaceWith(backdrop.cloneNode(true));
     }
 }
+
+window.blazorHelpers = {
+    addMenuCloseListener: function(dotNetHelper, menuElement) {
+        document.addEventListener('click', function handler(e) {
+            if (!menuElement.contains(e.target)) {
+                document.removeEventListener('click', handler);
+                dotNetHelper.invokeMethodAsync('CloseMenu');
+            }
+        });
+    }
+};
