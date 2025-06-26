@@ -3,8 +3,11 @@
 @using Core.Extensions
 @using Core.Models.Users
 @inject CustomHttpClient Http
+@inject IJSRuntime Js
+@inject NavigationManager Navigation
+@inject LocalStorageService LocalStorage
 
-<div class="auth-container">
+<div class="auth-container" @onclick="ToggleMenu">
     @if (_loadingInProgress)
     {
         <div class="loading-spinner"></div>
@@ -20,6 +23,22 @@
                 {
                     <div class="auth-tooltip">Рейтинг: @_user.Rating</div>
                 }
+            </div>
+        </div>
+        <div class="auth-menu @(_menuOpen ? "show" : string.Empty)" @ref="_menuRef" @onclick:stopPropagation>
+            <div class="menu-item" @onclick="ChangeAvatar">
+                <span class="menu-icon"><i class="fas fa-user-edit"></i></span>
+                Изменить аватар
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" @onclick="OpenSettings">
+                <span class="menu-icon"><i class="fas fa-cog"></i></span>
+                Настройки
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" @onclick="Logout">
+                <span class="menu-icon"><i class="fas fa-sign-out-alt"></i></span>
+                Выход
             </div>
         </div>
     }
@@ -38,6 +57,8 @@
     private string _statusClass = string.Empty;
     private bool _previousValue;
     private bool _isInitialized;
+    private bool _menuOpen;
+    private ElementReference _menuRef;
 
     private void ShowTooltip() => _showTooltip = true;
     private void HideTooltip() => _showTooltip = false;
@@ -65,7 +86,7 @@
     [Parameter] public UserModel? User { get; set; }
 
     [Parameter] public EventCallback<UserModel> UserChanged { get; set; }
-    
+
     [Parameter] public bool ReloadUser { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -77,10 +98,10 @@
             _isInitialized = true;
             _previousValue = _isInitialized;
             StateHasChanged();
-            
+
             return;
         }
-        
+
         try
         {
             var response = await Http.GetAsync("/api/v1/users", false);
@@ -106,7 +127,7 @@
             StateHasChanged();
         }
     }
-    
+
     protected override async Task OnParametersSetAsync()
     {
         if (ReloadUser != _previousValue && _isInitialized)
@@ -116,10 +137,20 @@
         }
     }
     
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_menuOpen)
+        {
+            await Js.InvokeVoidAsync("blazorHelpers.addMenuCloseListener", 
+                DotNetObjectReference.Create(this), 
+                _menuRef);
+        }
+    }
+
     private async Task OnValueChangedAsync()
     {
         if (ReloadUser == false) return;
-        
+
         try
         {
             var response = await Http.GetAsync("/api/v1/users", false);
@@ -144,5 +175,58 @@
             _previousValue = _isInitialized;
             StateHasChanged();
         }
+    }
+
+    private void ToggleMenu()
+    {
+        if (_user == null) return;
+        
+        _menuOpen = !_menuOpen;
+        StateHasChanged();
+    }
+
+    private void ChangeAvatar()
+    {
+        _menuOpen = false;
+        StateHasChanged();
+        // Ваша логика изменения аватара
+    }
+
+    private void OpenSettings()
+    {
+        _menuOpen = false;
+        StateHasChanged();
+        // Ваша логика открытия настроек
+    }
+
+    private async Task Logout()
+    {
+        _menuOpen = false;
+        StateHasChanged();
+
+        try
+        {
+            using var response = await Http.PostAsync<string>("/api/v1/auth/logout", null);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            _user = null;
+            await UserChanged.InvokeAsync(_user);
+            await LocalStorage.SetItemAsync("Guess_Who", new object());
+            StateHasChanged();
+            Navigation.NavigateTo("/");
+        }
+    }
+    
+    [JSInvokable]
+    public void CloseMenu()
+    {
+        _menuOpen = false;
+        StateHasChanged();
     }
 }
