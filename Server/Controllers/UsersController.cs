@@ -18,9 +18,11 @@ public class UsersController(IAuthProvider provider, ILogger<UsersController> lo
             var user = provider.GetCurrentUser(HttpContext);
             return Ok(new UserModel
             {
+                Id = user.Id,
                 NickName = user.NickName,
                 Role = user.Role,
-                Rating = user.Rating
+                Rating = user.Rating,
+                ImageId = user.FileId
             });
         }
         catch (Exception ex)

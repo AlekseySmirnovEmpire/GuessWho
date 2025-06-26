@@ -1,9 +1,6 @@
 ﻿@using System.Net
-@using Client.Services
 @using Core.Models.Auth
 @implements IDisposable
-@inject IJSRuntime Js
-@inject CustomHttpClient Http
 
 <div class="modal-backdrop @(!SignInOpen && SignUpOpen ? "show" : "hide")"
      @onclick="Close">

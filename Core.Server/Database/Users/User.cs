@@ -2,12 +2,13 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
 using Core.Models.Users;
+using Core.Server.Database.Files;
 
 namespace Core.Server.Database.Users;
 
 public class User
 {
-    private static readonly Expression<Func<User, bool>> IsActiveExpression = 
+    private static readonly Expression<Func<User, bool>> IsActiveExpression =
         user => !user.BannedAt.HasValue && user.ConfirmedEmail && user.ConfirmedByModerator;
 
     [Key] public long Id { get; init; }
@@ -34,6 +35,10 @@ public class User
     public DateTime? BannedAt { get; init; }
 
     public DateTime? UpdatedAt { get; init; }
+
+    public Guid? FileId { get; init; }
+
+    public FileData? File { get; init; }
 
     [NotMapped] public bool IsActive => IsActiveExpression.Compile()(this);
 

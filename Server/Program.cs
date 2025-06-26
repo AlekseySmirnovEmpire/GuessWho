@@ -64,6 +64,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<AuthController>();
 builder.Services.AddScoped<UsersController>();
+builder.Services.AddScoped<ImagesController>();
+builder.Services.AddScoped<ConfirmController>();
+builder.Services.AddScoped<PasswordController>();
 
 #endregion
 
@@ -80,6 +83,7 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IEmailTemplatingService, SubstitutionEmailTemplatingService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<FileDataService>();
 
 #endregion
 
@@ -87,6 +91,7 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEmailSendingQueueRepository, EmailSendingQueueRepository>();
+builder.Services.AddScoped<IFileDataRepository, FileDataRepository>();
 
 #endregion
 

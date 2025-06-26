@@ -3,6 +3,7 @@ using Core.Models.Auth;
 using Core.Models.Users;
 using Core.Server.Database.Users;
 using Core.Server.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Core.Server.Services;
@@ -18,7 +19,9 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
             : repository.Find(u => u.Email == email);
     }
 
-    public User? FindById(long id) => repository.Find(u => u.Id == id);
+    public User? FindById(long id) => repository.Find(
+        u => u.Id == id, 
+        user => user.Include(u => u.File));
 
     public void SetRefreshToken(long userId, string token) =>
         repository.Update(u => u.Id == userId, sp => sp.SetProperty(u => u.JwtToken, token));

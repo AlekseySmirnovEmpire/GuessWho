@@ -1,11 +1,6 @@
 ﻿@using System.Text.Json
-@using Client.Services
 @using Core.Extensions
 @using Core.Models.Users
-@inject CustomHttpClient Http
-@inject IJSRuntime Js
-@inject NavigationManager Navigation
-@inject LocalStorageService LocalStorage
 
 <div class="auth-container" @onclick="ToggleMenu">
     @if (_loadingInProgress)
@@ -14,7 +9,7 @@
     }
     else if (_user != null)
     {
-        <div class="auth-avatar @_statusClass"></div>
+        <div class="auth-avatar @_statusClass" style="@AvatarUrl()"></div>
         <div class="auth-info">
             <div class="auth-name">@_user.NickName</div>
             <div class="auth-rating @_statusClass" @onmouseover="ShowTooltip" @onmouseout="HideTooltip">
@@ -59,9 +54,14 @@
     private bool _isInitialized;
     private bool _menuOpen;
     private ElementReference _menuRef;
+    private string _avatarBackground = string.Empty;
 
     private void ShowTooltip() => _showTooltip = true;
     private void HideTooltip() => _showTooltip = false;
+
+    private string AvatarUrl() => !string.IsNullOrEmpty(_avatarBackground)
+        ? $"background-image: {_avatarBackground}; background-size: cover; border: none; object-fit: cover;"
+        : "background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 4a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z'/%3E%3C/svg%3E\")";
 
     private async Task ToggleSignIn()
     {
@@ -88,6 +88,12 @@
     [Parameter] public EventCallback<UserModel> UserChanged { get; set; }
 
     [Parameter] public bool ReloadUser { get; set; }
+    
+    [Parameter] public bool ReloadAvatar { get; set; }
+
+    [Parameter] public bool ChangeAvatarOpen { get; set; }
+
+    [Parameter] public EventCallback<bool> ChangeAvatarOpenChanged { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -97,6 +103,8 @@
             _loadingInProgress = false;
             _isInitialized = true;
             _previousValue = _isInitialized;
+            if (_user.ImageId.HasValue) _avatarBackground = $"url(\"{Http.GetBaseAddress()}/api/v1/images/{_user.ImageId}\")";
+
             StateHasChanged();
 
             return;
@@ -114,6 +122,8 @@
 
             _user = await JsonSerializer.DeserializeAsync<UserModel>(await response.Content.ReadAsStreamAsync());
             if (_user == null) return;
+
+            if (_user.ImageId.HasValue) _avatarBackground = $"url(\"{Http.GetBaseAddress()}/api/v1/images/{_user.ImageId}\")";
 
             await UserChanged.InvokeAsync(_user);
 
@@ -135,14 +145,20 @@
             _previousValue = ReloadUser;
             await OnValueChangedAsync();
         }
+
+        if (ReloadAvatar && _user?.ImageId != null)
+        {
+            _avatarBackground = $"url(\"{Http.GetBaseAddress()}/api/v1/images/{_user.ImageId}\")";
+            StateHasChanged();
+        }
     }
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_menuOpen)
         {
-            await Js.InvokeVoidAsync("blazorHelpers.addMenuCloseListener", 
-                DotNetObjectReference.Create(this), 
+            await Js.InvokeVoidAsync("blazorHelpers.addMenuCloseListener",
+                DotNetObjectReference.Create(this),
                 _menuRef);
         }
     }
@@ -163,6 +179,8 @@
 
             _user = await JsonSerializer.DeserializeAsync<UserModel>(await response.Content.ReadAsStreamAsync());
             if (_user == null) return;
+            
+            if (_user.ImageId.HasValue) _avatarBackground = $"url(\"{Http.GetBaseAddress()}/api/v1/images/{_user.ImageId}\")";
 
             await UserChanged.InvokeAsync(_user);
 
@@ -180,16 +198,16 @@
     private void ToggleMenu()
     {
         if (_user == null) return;
-        
+
         _menuOpen = !_menuOpen;
         StateHasChanged();
     }
 
-    private void ChangeAvatar()
+    private async Task ChangeAvatar()
     {
         _menuOpen = false;
+        await ChangeAvatarOpenChanged.InvokeAsync(true);
         StateHasChanged();
-        // Ваша логика изменения аватара
     }
 
     private void OpenSettings()
@@ -222,7 +240,7 @@
             Navigation.NavigateTo("/");
         }
     }
-    
+
     [JSInvokable]
     public void CloseMenu()
     {

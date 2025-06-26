@@ -13,6 +13,8 @@ public class CustomHttpClient(
     LocalStorageService localStorage, 
     IConfiguration config)
 {
+    public string? GetBaseAddress() => config["ApiUrl"];
+    
     public async Task<HttpResponseMessage?> GetAsync(string requestUri, bool needHandleError = true)
     {
         try
@@ -108,7 +110,7 @@ public class CustomHttpClient(
         httpClient.BaseAddress = client.BaseAddress;
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token?.Access);
         var newRequest = new HttpRequestMessage(method, $"{config["ApiUrl"]}{requestUri}");
-        if (body != null) request.Content = body;
+        if (body != null) newRequest.Content = body;
 
         return await httpClient.SendAsync(newRequest);
     }
