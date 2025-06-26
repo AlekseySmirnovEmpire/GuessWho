@@ -19,18 +19,10 @@
 <body>
 <div id="app">
 </div>
-<div id="blazor-error-ui">
+<div id="blazor-error-ui" style="background-color: #ffffff; color: black;">
     Ошибка подключения к сети.
-    <a href="" class="reload">Переподключиться</a>
-    <a class="dismiss">🗙</a>
-</div>
-<script src="_framework/blazor.webassembly.js"></script>
-<div id="app-loading">
-    <img src="icon-192.png" class="loading-logo" alt="Logo" />
-    <div class="loading-spinner"></div>
-    <div id="loading-humor" class="loading-text">
-        Загружаем самые смешные шутки...
-    </div>
+    <a href="" class="reload" style="color: #EF0027">Переподключиться</a>
+    <a class="dismiss" style="color: #EF0027;">🗙</a>
 </div>
 <script>
     window.addEventListener('load', () => {
@@ -51,9 +43,19 @@
         loadingElement.style.opacity = '0';
         setTimeout(() => {
             loadingElement.style.display = 'none';
-        }, 500);
+        }, 1000);
     });
 </script>
+<script src="_framework/blazor.webassembly.js"></script>
+<script src="/js/localStorage.js"></script>
+<script src="/js/site.js"></script>
+<div id="app-loading">
+    <img src="icon-192.png" class="loading-logo" alt="Logo" />
+    <div class="loading-spinner"></div>
+    <div id="loading-humor" class="loading-text">
+        Загружаем самые смешные шутки...
+    </div>
+</div>
 <script>navigator.serviceWorker.register('service-worker.js');</script>
 </body>
 

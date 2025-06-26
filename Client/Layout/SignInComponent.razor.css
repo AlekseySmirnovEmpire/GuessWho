@@ -1,0 +1,145 @@
+﻿.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal.hide {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.modal-dialog {
+    width: auto;
+    max-width: 700px; /* Можно настроить по необходимости */
+    min-width: 350px;
+    margin: 0 auto;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.modal-backdrop.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-backdrop.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    padding: 20px;
+    pointer-events: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #EF0027;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.form-control {
+    border: 1px solid #000; /* Черная рамка по умолчанию */
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545; /* Красная рамка при ошибке */
+}
+
+/* Убираем зеленую рамку при валидации */
+.form-control.valid {
+    border-color: #000; /* Оставляем черную */
+    background-image: none; /* Убираем галочку */
+    padding-right: .75rem; /* Возвращаем стандартный отступ */
+}
+
+.close-btn {
+    font-size: 24px;
+    cursor: pointer;
+    color: #EF0027;
+    user-select: none;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.modal-footer {
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+}
+
+.modal-footer img {
+    max-width: 100%; 
+    height: auto;
+}
+
+.modal-body button {
+    color: #ffffff;
+    background: #EF0027;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.modal-body button:hover {
+    background-color: #bd001f; /* Темнее при наведении */
+}
+
+.modal-body button:active {
+    background-color: #000; /* Черный фон при нажатии */
+    color: #ffffff; /* Красный текст */
+    box-shadow: none; /* Убираем тень */
+}
+
+.modal-body button:focus {
+    box-shadow: none; /* Убираем синюю рамку при фокусе */
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #ccc; /* Серый цвет границы */
+    border-top: 3px solid #EF0027; /* Красный цвет для верхней части */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto; /* Центрирование по горизонтали */
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

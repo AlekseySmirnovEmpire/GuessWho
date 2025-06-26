@@ -1,3 +1,9 @@
-﻿namespace Core.Models.Auth;
+﻿using System.Text.Json.Serialization;
 
-public class UserCreateResponseModel;
+namespace Core.Models.Auth;
+
+public class UserCreateResponseModel
+{
+    [JsonPropertyName("error")]
+    public string Error { get; set; }
+}

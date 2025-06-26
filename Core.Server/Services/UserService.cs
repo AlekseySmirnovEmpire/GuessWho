@@ -107,4 +107,9 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
 
         return true;
     }
+
+    public void RemoveOld() => 
+        repository.Delete(
+            u => u.CreatedAt <= DateTime.Now.AddDays(-1) &&
+                 (!u.ConfirmedByModerator || !u.ConfirmedEmail));
 }

@@ -29,7 +29,7 @@ public static class EmailVerificationService
         // Кодирование в Base64Url
         return $"{Environment.GetEnvironmentVariable("CLIENT_URL")}/confirm?token={Base64UrlEncode(payload)}";
     }
-    
+
     public static string GenerateResetPasswordLink(User user)
     {
         var claims = new UserClaims(user);
@@ -81,7 +81,18 @@ public static class EmailVerificationService
             .Replace('+', '-')
             .TrimEnd('=');
 
-    private static string Base64UrlDecode(string input) =>
-        Encoding.UTF8.GetString(
-            Convert.FromBase64String(input.Replace('-', '+').Replace('_', '/') + "=="[..(input.Length % 4)]));
+    private static string Base64UrlDecode(string input)
+    {
+        // Заменяем URL-безопасные символы обратно на стандартные Base64
+        var base64 = input.Replace('-', '+').Replace('_', '/');
+
+        // Добавляем правильное количество символов дополнения
+        switch (base64.Length % 4)
+        {
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
+        }
+
+        return Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+    }
 }

@@ -1,0 +1,58 @@
+﻿@page "/confirm"
+@using Client.Services
+@using Core.Models.Users
+@using Microsoft.AspNetCore.WebUtilities
+@layout MainLayout
+@inject CustomHttpClient Http
+@inject NavigationManager Navigation
+
+@if (_confirmSuccess)
+{
+    <div class="row align-content-center" style="text-align: center;">
+        <h1>Подтверждение email</h1>
+        <div class="">
+            Ваш email успешно подтверждён, ожидайте подтверждения от администратора или модератора в течении суток.
+        </div>
+    </div>
+}
+
+@code {
+    private bool _confirmSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (!QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query)
+                    .TryGetValue("token", out var token) ||
+                string.IsNullOrEmpty(token.FirstOrDefault()))
+            {
+                Navigation.NavigateTo("/error/404");
+
+                return;
+            }
+
+            using var response = await Http.PostAsync(
+                "/api/v1/confirm/email",
+                new ConfirmModel
+                {
+                    Token = token.FirstOrDefault()!
+                });
+            if (!response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/error/404");
+
+                return;
+            }
+
+            _confirmSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+
+            Navigation.NavigateTo("/error/404");
+        }
+    }
+
+}

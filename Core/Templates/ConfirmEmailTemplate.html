@@ -22,18 +22,30 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .header h1 {
-            color: #2c3e50;
+            color: #EF0027;
             margin-bottom: 10px;
         }
         .button {
             display: inline-block;
-            background-color: #3498db;
+            background-color: #EF0027 !important;
             color: white !important;
             text-decoration: none;
             padding: 12px 25px;
+            border: none;
             border-radius: 5px;
             font-weight: bold;
             margin: 20px 0;
+        }
+        .button:hover {
+            background-color: #bd001f; /* Темнее при наведении */
+        }
+        .button:active {
+            background-color: #000; /* Черный фон при нажатии */
+            color: #ffffff; /* Красный текст */
+            box-shadow: none; /* Убираем тень */
+        }
+        .button:focus {
+            box-shadow: none; /* Убираем синюю рамку при фокусе */
         }
         .footer {
             margin-top: 30px;

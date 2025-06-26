@@ -1,38 +1,148 @@
-﻿@using System.Text.Json.Serialization
+﻿@using System.Text.Json
+@using Client.Services
+@using Core.Extensions
+@using Core.Models.Users
+@inject CustomHttpClient Http
 
-@* <div class="row"> *@
-@*     @if (IsAuth) *@
-@*     { *@
-@*      *@
-@*     } *@
-@*     else *@
-@*     { *@
-@*         <div></div> *@
-@*     } *@
-@* </div> *@
-@* *@
-@* @code { *@
-@*     private bool IsAuth = false; *@
-@*      *@
-@*     protected override async Task OnInitializedAsync() *@
-@*     { *@
-@*         var tokenModel = await LocalStorage.GetItemAsync<TokenModel>("guess-who-auth"); *@
-@*         if (string.IsNullOrEmpty(tokenModel?.Access)) *@
-@*         { *@
-@*             IsAuth = false; *@
-@*              *@
-@*             return; *@
-@*         } *@
-@* *@
-@*          *@
-@*     } *@
-@* *@
-@*     private record TokenModel *@
-@*     { *@
-@*         [JsonPropertyName("access_token")] *@
-@*         public string? Access { get; set; } *@
-@*      *@
-@*         [JsonPropertyName("refresh_token")] *@
-@*         public string? Refresh { get; set; } *@
-@*     } *@
-@* } *@
+<div class="auth-container">
+    @if (_loadingInProgress)
+    {
+        <div class="loading-spinner"></div>
+    }
+    else if (_user != null)
+    {
+        <div class="auth-avatar @_statusClass"></div>
+        <div class="auth-info">
+            <div class="auth-name">@_user.NickName</div>
+            <div class="auth-rating @_statusClass" @onmouseover="ShowTooltip" @onmouseout="HideTooltip">
+                @_user.Role.GetDescription()
+                @if (_showTooltip)
+                {
+                    <div class="auth-tooltip">Рейтинг: @_user.Rating</div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <a class="btn" @onclick:preventDefault @onclick="ToggleSignIn">Вход</a>
+        <a class="btn" @onclick:preventDefault @onclick="ToggleSignUp">Регистрация</a>
+    }
+</div>
+
+@code
+{
+    private bool _showTooltip;
+    private bool _loadingInProgress = true;
+    private UserModel? _user;
+    private string _statusClass = string.Empty;
+    private bool _previousValue;
+    private bool _isInitialized;
+
+    private void ShowTooltip() => _showTooltip = true;
+    private void HideTooltip() => _showTooltip = false;
+
+    private async Task ToggleSignIn()
+    {
+        SignInOpen = !SignInOpen;
+        await SignInOpenChanged.InvokeAsync(SignInOpen);
+    }
+
+    private async Task ToggleSignUp()
+    {
+        SignUpOpen = !SignUpOpen;
+        await SignUpOpenChanged.InvokeAsync(SignUpOpen);
+    }
+
+    [Parameter] public bool SignInOpen { get; set; }
+
+    [Parameter] public EventCallback<bool> SignInOpenChanged { get; set; }
+
+    [Parameter] public bool SignUpOpen { get; set; }
+
+    [Parameter] public EventCallback<bool> SignUpOpenChanged { get; set; }
+
+    [Parameter] public UserModel? User { get; set; }
+
+    [Parameter] public EventCallback<UserModel> UserChanged { get; set; }
+    
+    [Parameter] public bool ReloadUser { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = User;
+        if (_user != null)
+        {
+            _loadingInProgress = false;
+            _isInitialized = true;
+            _previousValue = _isInitialized;
+            StateHasChanged();
+            
+            return;
+        }
+        
+        try
+        {
+            var response = await Http.GetAsync("/api/v1/users", false);
+            if (response == null)
+            {
+                _loadingInProgress = false;
+
+                return;
+            }
+
+            _user = await JsonSerializer.DeserializeAsync<UserModel>(await response.Content.ReadAsStreamAsync());
+            if (_user == null) return;
+
+            await UserChanged.InvokeAsync(_user);
+
+            _statusClass = RatingService.GetRatingMark(_user.Rating);
+        }
+        finally
+        {
+            _loadingInProgress = false;
+            _isInitialized = true;
+            _previousValue = _isInitialized;
+            StateHasChanged();
+        }
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ReloadUser != _previousValue && _isInitialized)
+        {
+            _previousValue = ReloadUser;
+            await OnValueChangedAsync();
+        }
+    }
+    
+    private async Task OnValueChangedAsync()
+    {
+        if (ReloadUser == false) return;
+        
+        try
+        {
+            var response = await Http.GetAsync("/api/v1/users", false);
+            if (response == null)
+            {
+                _loadingInProgress = false;
+
+                return;
+            }
+
+            _user = await JsonSerializer.DeserializeAsync<UserModel>(await response.Content.ReadAsStreamAsync());
+            if (_user == null) return;
+
+            await UserChanged.InvokeAsync(_user);
+
+            _statusClass = RatingService.GetRatingMark(_user.Rating);
+        }
+        finally
+        {
+            _loadingInProgress = false;
+            _isInitialized = true;
+            _previousValue = _isInitialized;
+            StateHasChanged();
+        }
+    }
+}

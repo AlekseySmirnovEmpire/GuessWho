@@ -37,12 +37,12 @@ public class SubstitutionEmailTemplatingService : IEmailTemplatingService
             SubstitutionEmailTemplates.ConfirmEmail when model is User userModel => template
                 .Replace("{{UserName}}", userModel.NickName)
                 .Replace("{{ConfirmationLink}}", EmailVerificationService.GenerateVerificationLink(userModel))
-                .Replace("{{LogoUrl}}", "https://example.com/logo.png")
+                .Replace("{{LogoUrl}}", $"{Environment.GetEnvironmentVariable("CLIENT_URL")}/icon-192.png")
                 .Replace("{{CurrentYear}}", DateTime.Now.Year.ToString()),
             SubstitutionEmailTemplates.ResetPassword when model is User userModel => template
                 .Replace("{{UserName}}", userModel.NickName)
                 .Replace("{{ResetPasswordLink}}", EmailVerificationService.GenerateResetPasswordLink(userModel))
-                .Replace("{{LogoUrl}}", "https://example.com/logo.png")
+                .Replace("{{LogoUrl}}", $"{Environment.GetEnvironmentVariable("CLIENT_URL")}/icon-192.png")
                 .Replace("{{CurrentYear}}", DateTime.Now.Year.ToString()),
             _ => throw new ArgumentException($"Unsupported template or model type: {templateName}")
         };

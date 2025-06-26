@@ -63,6 +63,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 #region Контроллеры
 
 builder.Services.AddScoped<AuthController>();
+builder.Services.AddScoped<UsersController>();
 
 #endregion
 
@@ -99,12 +100,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins(Environment.GetEnvironmentVariable("CLIENT_URL")!)
+    options.AddPolicy("AllowBlazorApp",
+        policy => policy
+            .WithOrigins(Environment.GetEnvironmentVariable("CLIENT_URL")!) // URL вашего Blazor-приложения
+            .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
+            .AllowCredentials());
 });
 
 #endregion
@@ -124,6 +125,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowBlazorApp");
 
 app.UseHttpsRedirection();
 

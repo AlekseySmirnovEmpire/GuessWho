@@ -64,6 +64,8 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IEmailSendingQueueRepository, EmailSendingQueueRepository>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<UserService>();
 
 builder.Services.AddSingleton<IMessageBusProvider, RedisMessageBusProvider>();
 builder.Services.AddSingleton<IMessageBusManager, MessageBusManager>();
@@ -76,6 +78,10 @@ builder.Services.AddQuartz(q =>
         .WithIdentity(nameof(EmailSendingJob))
         .StoreDurably()
     );
+    q.AddJob<UserCleanerJob>(j => j
+        .WithIdentity(nameof(UserCleanerJob))
+        .StoreDurably()
+    );
 
     // Настройка триггера
     q.AddTrigger(t => t
@@ -83,6 +89,15 @@ builder.Services.AddQuartz(q =>
         .WithIdentity(nameof(EmailSendingJob))
         .WithSimpleSchedule(s => s
             .WithIntervalInSeconds(15) // Интервал выполнения
+            .RepeatForever()
+        )
+        .StartNow()
+    );
+    q.AddTrigger(t => t
+        .ForJob(nameof(UserCleanerJob))
+        .WithIdentity(nameof(UserCleanerJob))
+        .WithSimpleSchedule(s => s
+            .WithIntervalInHours(24) // Интервал выполнения
             .RepeatForever()
         )
         .StartNow()

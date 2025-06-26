@@ -1,9 +1,12 @@
-﻿namespace Core.Models.Users;
+﻿using System.Text.Json.Serialization;
+
+namespace Core.Models.Users;
 
 public class UserModel
 {
-    public long Id { get; set; }
-    public string NickName { get; set; }
-    public UserRole Role { get; set; }
-    public int Rating { get; set; }
+    [JsonPropertyName("nickName")] public string NickName { get; init; }
+
+    [JsonPropertyName("role")] public UserRole Role { get; init; }
+
+    [JsonPropertyName("rating")] public ushort Rating { get; init; }
 }
