@@ -11,6 +11,7 @@
     <SignInComponent @bind-SignInOpen="_signInOpen" @bind-SignUpOpen="_signUpOpen" ReloadUserChanged="@HandleValue"/>
     <SignUpComponent @bind-SignInOpen="_signInOpen" @bind-SignUpOpen="_signUpOpen"/>
     <ChangeAvatarComponent @bind-User="_user" @bind-Open="_changeAvatar" @bind-ReloadAvatar="_reloadAvatar"/>
+    <UserSettingsComponent @bind-User="_user" @bind-ReloadUser="_reloadUser" @bind-Open="_settingsOpen"/>
 
     <div class="main-container">
         <main>
@@ -21,7 +22,8 @@
                     @bind-User="_user" 
                     ReloadUser="@_reloadUser"
                     ReloadAvatar="_reloadAvatar"
-                    @bind-ChangeAvatarOpen="_changeAvatar"/>
+                    @bind-ChangeAvatarOpen="_changeAvatar"
+                    @bind-SettingsOpen="_settingsOpen"/>
             </div>
 
             <article class="content px-4">
@@ -41,6 +43,7 @@
     private bool _signInOpen;
     private bool _signUpOpen;
     private bool _changeAvatar;
+    private bool _settingsOpen;
     private UserModel? _user;
     private bool _reloadUser;
     private bool _reloadAvatar;

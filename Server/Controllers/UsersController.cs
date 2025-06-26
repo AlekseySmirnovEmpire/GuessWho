@@ -1,5 +1,6 @@
 ﻿using Core.Models.Users;
 using Core.Server.Providers;
+using Core.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 using Server.Filters;
 
@@ -7,7 +8,7 @@ namespace Server.Controllers;
 
 [Route("/api/v1/[controller]")]
 [JwtAuth]
-public class UsersController(IAuthProvider provider, ILogger<UsersController> logger) 
+public class UsersController(IAuthProvider provider, ILogger<UsersController> logger, UserService service) 
     : BaseApiController
 {
     [HttpGet]
@@ -24,6 +25,26 @@ public class UsersController(IAuthProvider provider, ILogger<UsersController> lo
                 Rating = user.Rating,
                 ImageId = user.FileId
             });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+
+            return ex switch
+            {
+                _ => BadRequest()
+            };
+        }
+    }
+
+    [HttpPost]
+    public IActionResult ChangeData([FromBody] ChangeUserData data)
+    {
+        try
+        {
+            var user = provider.GetCurrentUser(HttpContext);
+            service.ChangeUserData(data, user.Id);
+            return Ok();
         }
         catch (Exception ex)
         {

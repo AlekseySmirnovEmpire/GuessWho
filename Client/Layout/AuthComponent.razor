@@ -94,6 +94,10 @@
     [Parameter] public bool ChangeAvatarOpen { get; set; }
 
     [Parameter] public EventCallback<bool> ChangeAvatarOpenChanged { get; set; }
+    
+    [Parameter] public bool SettingsOpen { get; set; }
+
+    [Parameter] public EventCallback<bool> SettingsOpenChanged { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -210,11 +214,11 @@
         StateHasChanged();
     }
 
-    private void OpenSettings()
+    private async Task OpenSettings()
     {
         _menuOpen = false;
+        await SettingsOpenChanged.InvokeAsync(true);
         StateHasChanged();
-        // Ваша логика открытия настроек
     }
 
     private async Task Logout()
