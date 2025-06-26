@@ -12,5 +12,8 @@ public class UserModel
 
     [JsonPropertyName("rating")] public ushort Rating { get; init; }
 
-    [JsonPropertyName("avatarId")] public Guid? ImageId { get; set; }
+    [JsonPropertyName("avatarId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? ImageId { get; set; }
+
+    [JsonPropertyName("active")] public bool ActiveUser { get; set; }
 }

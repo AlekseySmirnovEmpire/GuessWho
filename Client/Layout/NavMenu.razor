@@ -24,11 +24,11 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="weather">
+                <NavLink class="nav-link" href="rating">
                     <i class="fa-solid fa-trophy fa-lg"></i> Рейтинг
                 </NavLink>
             </div>
-            @if (User.Role == UserRole.Admin || User.Role == UserRole.Moderator)
+            @if (User.Role is UserRole.Admin or UserRole.Moderator)
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="">
