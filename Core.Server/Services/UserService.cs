@@ -129,4 +129,8 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
                 u => u.Id == userId, 
                 sp => sp.SetProperty(u => u.NickName, data.NickName));
     }
+
+    public List<User> FindAllForRating() => repository
+        .FindList(_ => true).OrderByDescending(u => u.Rating)
+        .ToList();
 }

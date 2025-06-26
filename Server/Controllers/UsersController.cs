@@ -56,4 +56,30 @@ public class UsersController(IAuthProvider provider, ILogger<UsersController> lo
             };
         }
     }
+
+    [HttpGet]
+    [Route("rating")]
+    public IActionResult GetUsersRating()
+    {
+        try
+        {
+            var user = provider.GetCurrentUser(HttpContext);
+            var users = service.FindAllForRating();
+            return Ok(users.Select(u => new UserModel
+            {
+                NickName = u.NickName,
+                Rating = u.Rating,
+                ActiveUser = user.Id == u.Id
+            }));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+
+            return ex switch
+            {
+                _ => BadRequest()
+            };
+        }
+    }
 }
