@@ -66,11 +66,7 @@
                                 <div class="invalid-feedback">Пароли не совпадают</div>
                             }
                         </div>
-                        @if (!string.IsNullOrEmpty(_errorsInProgress))
-                        {
-                            <div style="color: #EF0027">@_errorsInProgress</div>
-                        }
-                        else if (_progress)
+                        @if (_progress)
                         {
                             <div class="loading-spinner"></div>
                         }
@@ -85,6 +81,10 @@
                                     <li>соблюдение условий пользовательского соглашения</li>
                                 </ul>
                             </div>
+                            if (!string.IsNullOrEmpty(_errorsInProgress))
+                            {
+                                <div style="color: #EF0027">@_errorsInProgress</div>
+                            }
                             <button class="btn btn-primary mt-3" @onclick="HandleSubmit">Зарегистрироваться</button>
                         }
                     </EditForm>

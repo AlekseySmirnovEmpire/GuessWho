@@ -1,0 +1,290 @@
+﻿@page "/moderate"
+@using System.Net
+@using System.Text.Json
+@using Core.Extensions
+@using Core.Models.GamePacks
+@using Core.Models.Users
+
+<AddGamePackComponent @bind-GamePacks="_packs" @bind-Open="_openAddTab"/>
+
+<h3>Модерирование паков</h3>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th>Название</th>
+            <th>Активен</th>
+            <th>Дата создания</th>
+            <th>Автор</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in _packs)
+        {
+            <tr>
+                <td>@item.DisplayName</td>
+                <td>
+                    @if (item.IsActive)
+                    {
+                        <span class="text-success">✓</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger">✗</span>
+                    }
+                </td>
+                <td>@item.CreatedAt.ToShortDateString()</td>
+                <td>@item.UserCreated.NickName</td>
+                <td>
+                    @if (_progress)
+                    {
+                        <div class="loading-spinner"></div>
+                    }
+                    else
+                    {
+                        <button @onclick="() => ToggleActive(item)"
+                                class="btn btn-sm @(item.IsActive ? "btn-warning" : "btn-success") me-2">
+                            @(item.IsActive ? "Деактивировать" : "Активировать")
+                        </button>
+                        <button @onclick="() => DeleteItem(item)" class="btn btn-sm btn-danger">Удалить</button>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<button @onclick="AddItem" class="btn btn-primary mt-3">Добавить</button>
+<br/>
+
+<h3>Модерирование игроков</h3>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th>NickName</th>
+            <th>Роль</th>
+            <th>Почта подтверждена</th>
+            <th>Пользователь активен</th>
+            <th>Дата создания</th>
+            <th>Изменить статус</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in _users)
+        {
+            <tr>
+                <td>@item.NickName</td>
+                <td>@item.Role.GetDescription()</td>
+                <td>
+                    @if (item.ConfirmEmail)
+                    {
+                        <span class="text-success">✓</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger">✗</span>
+                    }
+                </td>
+                <td>
+                    @if (item.ConfirmByModerator)
+                    {
+                        <span class="text-success">✓</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger">✗</span>
+                    }
+                </td>
+                <td>@item.CreatedAt.ToShortDateString()</td>
+                <td>
+                    @if (_progress)
+                    {
+                        <div class="loading-spinner"></div>
+                    }
+                    else if (!item.ConfirmByModerator)
+                    {
+                        <button @onclick="() => ConfirmUserByModerator(item)" class="btn btn-sm btn-danger">
+                            Активировать
+                        </button>
+                    }
+                    else if (item.Role != UserRole.Admin)
+                    {
+                        <button @onclick="() => ToggleUserActive(item)"
+                                class="btn btn-sm @(!item.IsBanned ? "btn-warning" : "btn-success") me-2">
+                            @(!item.IsBanned ? "Забанить" : "Разбанить")
+                        </button>
+                    }
+                    else
+                    {
+                        <div>Админ</div>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private bool _openAddPanel;
+    private bool _progress;
+    private bool _openAddTab;
+    private List<GamePackDtoModel> _packs = [];
+    private List<UserModel> _users = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using var packResponse = await Http.GetAsync("/api/v1/gamepack/all");
+            if (packResponse?.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Navigation.NavigateTo("/error/401");
+
+                return;
+            }
+
+            if (packResponse?.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Navigation.NavigateTo("/error/403");
+
+                return;
+            }
+
+            if (packResponse?.IsSuccessStatusCode != true) throw new Exception("не удалось загрузить паки");
+
+            _packs = (await JsonSerializer.DeserializeAsync<List<GamePackDtoModel>>(await packResponse.Content.ReadAsStreamAsync()))!;
+
+            using var usersResponse = await Http.GetAsync("/api/v1/users/all");
+            if (usersResponse?.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Navigation.NavigateTo("/error/401");
+
+                return;
+            }
+
+            if (usersResponse?.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Navigation.NavigateTo("/error/403");
+
+                return;
+            }
+            
+            if (usersResponse?.IsSuccessStatusCode != true) throw new Exception("не удалось загрузить паки");
+
+            _users = (await JsonSerializer.DeserializeAsync<List<UserModel>>(await usersResponse.Content.ReadAsStreamAsync()))!;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+
+            Navigation.NavigateTo("/error");
+        }
+    }
+
+    private async Task ConfirmUserByModerator(UserModel user)
+    {
+        try
+        {
+            _progress = true;
+            StateHasChanged();
+
+            using var response = await Http.PostAsync<string>($"/api/v1/users/confirm/{user.Id}", null);
+            response.EnsureSuccessStatusCode();
+
+            user.ConfirmByModerator = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleUserActive(UserModel user)
+    {
+        try
+        {
+            _progress = true;
+            StateHasChanged();
+
+            using var response = await Http.PostAsync<string>($"/api/v1/users/ban/{user.Id}", null);
+            response.EnsureSuccessStatusCode();
+
+            user.IsBanned = !user.IsBanned;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleActive(GamePackDtoModel item)
+    {
+        try
+        {
+            _progress = true;
+            StateHasChanged();
+
+            using var response = await Http.PostAsync<string>(
+                $"/api/v1/gamepack/change-activity/{item.Id}?active={(!item.IsActive).ToString()}",
+                null);
+            response.EnsureSuccessStatusCode();
+
+            item.IsActive = !item.IsActive;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteItem(GamePackDtoModel item)
+    {
+        try
+        {
+            _progress = true;
+            StateHasChanged();
+
+            using var response = await Http.DeleteAsync($"/api/v1/gamepack/{item.Id}");
+            response.EnsureSuccessStatusCode();
+
+            _packs.Remove(item);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+    private void AddItem()
+    {
+        _openAddTab = true;
+        StateHasChanged();
+    }
+
+}

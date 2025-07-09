@@ -1,0 +1,191 @@
+﻿@using System.Text.Json
+@using Core.Models.GamePacks
+<div class="modal-backdrop @(Open ? "show" : "hide")"
+     @onclick="Close">
+</div>
+
+<div class="modal @(Open ? "show" : "hide")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header no-select">
+                <h3>Добавление пака</h3>
+                <span class="close-btn" @onclick="Close">×</span>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@this" OnValidSubmit="@HandleSubmit">
+                    <DataAnnotationsValidator/>
+                    <div class="form-group">
+                        <label class="no-select">Название:</label>
+                        <InputText @bind-Value="_displayName"
+                                   class="@GetDisplayNameClass()"/>
+                        <ValidationMessage For="@(() => _displayName)"/>
+                        @if (string.IsNullOrEmpty(_displayName))
+                        {
+                            <div class="invalid-feedback">Введите название</div>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label class="no-select">Описание:</label>
+                        <InputTextArea @bind-Value="_description" class="form-control"/>
+                        <ValidationMessage For="@(() => _description)"/>
+                    </div>
+                    <div class="form-group">
+                        <label class="no-select">Файл:</label>
+                        <InputFile type="file" OnChange="LoadFiles" class="form-control"/>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_errorsInProgress))
+                    {
+                        <div style="color: #EF0027">@_errorsInProgress</div>
+                    }
+                    else if (_progress)
+                    {
+                        <div class="loading-spinner"></div>
+                    }
+                    else
+                    {
+                        if (_success)
+                        {
+                            <div>Данные загружены</div>
+                        }
+
+                        <button class="btn btn-primary mt-3" @onclick="HandleSubmit">Загрузить</button>
+                    }
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _progress;
+    private string _errorsInProgress = string.Empty;
+    private string _displayName = string.Empty;
+    private string? _description = string.Empty;
+    private string _type = string.Empty;
+    private bool _success;
+    private byte[]? _data;
+
+    private string GetDisplayNameClass() => _displayName.Length is >= 4 and <= 255 ? "form-control" : "form-control is-invalid";
+
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    [Parameter] public List<GamePackDtoModel>? GamePacks { get; set; }
+
+    [Parameter] public EventCallback<List<GamePackDtoModel>> GamePacksChanged { get; set; }
+
+    private async Task Close()
+    {
+        if (_progress) return;
+
+        _errorsInProgress = string.Empty;
+        _data = null;
+        _success = false;
+        _type = string.Empty;
+
+        await OpenChanged.InvokeAsync(false);
+    }
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            _progress = true;
+            _errorsInProgress = string.Empty;
+            _success = false;
+            StateHasChanged();
+
+            const long maxFileSize = 10 * 1024 * 1024; // Увеличил до 10MB для архивов
+            var allowedContentTypes = new List<string>
+            {
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/x-rar-compressed",
+                "application/x-7z-compressed",
+                "application/x-tar",
+                "application/gzip"
+            };
+
+            var file = e.File;
+
+            // Проверка типа файла
+            if (!file.Name.Contains(".zip") && !file.Name.Contains(".rar"))
+            {
+                // Показ ошибки пользователю
+                _errorsInProgress = $"Недопустимый формат файла. Разрешены только: {string.Join(", ", allowedContentTypes)}";
+
+                return;
+            }
+
+            // Проверка размера файла
+            if (file.Size > maxFileSize)
+            {
+                _errorsInProgress = $"Файл слишком большой. Максимальный размер: {maxFileSize / 1024 / 1024}MB";
+
+                return;
+            }
+
+            // Чтение файла как потока
+            await using var stream = file.OpenReadStream(maxFileSize);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+
+            _data = memoryStream.ToArray();
+            _type = "application/zip";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _errorsInProgress = "не удалось загрузить архив";
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            _progress = true;
+            _errorsInProgress = string.Empty;
+            _success = false;
+            StateHasChanged();
+
+            if (_data == null) throw new Exception();
+
+            if (_displayName.Length is < 4 or > 255) return;
+
+            using var response = await Http.PutAsync(
+                "/api/v1/gamepack",
+                new GamePackCreateDtoModel
+                {
+                    DisplayName = _displayName,
+                    Type = _type,
+                    Description = string.IsNullOrEmpty(_description) ? null : _description,
+                    Data = _data
+                });
+            response.EnsureSuccessStatusCode();
+
+            GamePacks ??= [];
+            GamePacks.Add((await JsonSerializer.DeserializeAsync<GamePackDtoModel>(await response.Content.ReadAsStreamAsync()))!);
+
+            await GamePacksChanged.InvokeAsync(GamePacks);
+            _success = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _errorsInProgress = "не удалось загрузить архив";
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+}

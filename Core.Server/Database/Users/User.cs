@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
 using Core.Models.Users;
 using Core.Server.Database.Files;
+using Core.Server.Database.GamePacks;
+using Core.Server.Database.Lobbies;
 
 namespace Core.Server.Database.Users;
 
@@ -36,9 +38,17 @@ public class User
 
     public DateTime? UpdatedAt { get; init; }
 
-    public Guid? FileId { get; init; }
+    public Guid? ImageId { get; init; }
 
-    public FileData? File { get; init; }
+    public FileData? Image { get; init; }
+
+    public ICollection<GamePack> GamePacks { get; init; }
+
+    public ICollection<Lobby> HostedLobby { get; init; }
+
+    public Guid? JoinedLobbyId { get; init; }
+
+    public Lobby? JoinedLobby { get; init; }
 
     [NotMapped] public bool IsActive => IsActiveExpression.Compile()(this);
 
@@ -57,5 +67,10 @@ public class User
         Role = UserRole.Player;
     }
 
-    public bool CheckAccess(UserRole minimumRole) => (ushort)minimumRole <= (ushort)Role;
+    public bool CheckAccess(UserRole minimumRole) => minimumRole switch
+    {
+        UserRole.Admin => Role == UserRole.Admin,
+        UserRole.Moderator => Role is UserRole.Moderator or UserRole.Admin,
+        _ => true,
+    };
 }

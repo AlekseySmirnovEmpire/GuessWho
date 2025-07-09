@@ -14,14 +14,14 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
     {
         if (string.IsNullOrEmpty(email)) return null;
 
-        return !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase) 
-            ? null 
+        return !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase)
+            ? null
             : repository.Find(u => u.Email == email);
     }
 
     public User? FindById(long id) => repository.Find(
-        u => u.Id == id, 
-        user => user.Include(u => u.File));
+        u => u.Id == id,
+        user => user.Include(u => u.Image));
 
     public void SetRefreshToken(long userId, string token) =>
         repository.Update(u => u.Id == userId, sp => sp.SetProperty(u => u.JwtToken, token));
@@ -126,11 +126,52 @@ public class UserService(ILogger<UserService> logger, IUserRepository repository
     {
         if (!string.IsNullOrEmpty(data.NickName))
             repository.Update(
-                u => u.Id == userId, 
+                u => u.Id == userId,
                 sp => sp.SetProperty(u => u.NickName, data.NickName));
     }
 
     public List<User> FindAllForRating() => repository
         .FindList(_ => true).OrderByDescending(u => u.Rating)
         .ToList();
+
+    public bool ChangeUserBanStatus(User user, long userId)
+    {
+        if (!user.CheckAccess(UserRole.Moderator)) throw new UnauthorizedAccessException();
+
+        if (repository.FindList(u => u.Id == userId).Select(u => u.BannedAt).FirstOrDefault() != null)
+        {
+            repository.Update(
+                u => u.Id == userId && !u.BannedAt.HasValue,
+                sp => sp.SetProperty(u => u.BannedAt, DateTime.Now));
+        }
+        else
+        {
+            repository.Update(
+                u => u.Id == userId && u.BannedAt.HasValue,
+                sp => sp.SetProperty(u => u.BannedAt, (DateTime?)null));
+        }
+
+        return true;
+    }
+
+    public List<UserModel> FindAllUsers(User user)
+    {
+        if (!user.CheckAccess(UserRole.Moderator)) throw new UnauthorizedAccessException();
+
+        return repository
+            .FindList(_ => true)
+            .OrderByDescending(u => u.CreatedAt)
+            .Select(u => new UserModel
+            {
+                Id = u.Id,
+                NickName = u.NickName,
+                ConfirmByModerator = u.ConfirmedByModerator,
+                CreatedAt = u.CreatedAt,
+                Role = u.Role,
+                Rating = u.Rating,
+                ConfirmEmail = u.ConfirmedEmail,
+                IsBanned = u.BannedAt.HasValue
+            })
+            .ToList();
+    }
 }

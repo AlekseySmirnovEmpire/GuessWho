@@ -1,0 +1,241 @@
+﻿@using System.Text.Json
+@using Core.Models.GamePacks
+@using Core.Models.Lobbies
+@using Microsoft.AspNetCore.Http.Connections
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+<div class="modal-backdrop @(Open ? "show" : "hide")"
+     @onclick="Close">
+</div>
+
+<div class="modal @(Open ? "show" : "hide")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header no-select">
+                <h3>Создание лобби</h3>
+                <span class="close-btn" @onclick="Close">×</span>
+            </div>
+            <div class="modal-body">
+                @if (_progress)
+                {
+                    <div class="loading-spinner"></div>
+                }
+                else
+                {
+                    <EditForm Model="@this" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator/>
+                        <div class="form-group">
+                            <label class="no-select">Название:</label>
+                            <InputText @bind-Value="_displayName" maxlength="255"
+                                       class="@GetDisplayNameClass()"/>
+                            @if (_displayName.Length > 255)
+                            {
+                                <div class="invalid-feedback">Никнейм должен быть от 4 до 255 символов</div>
+                            }
+                        </div>
+
+                        <div class="form-group">
+                            <label class="no-select">Количество игроков:</label>
+                            <InputNumber Min="2" Max="10" Step="2" @bind-Value="_playersCount"
+                                         class="form-control"/>
+                            <ValidationMessage For="@(() => _playersCount)"/>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="no-select">Изменение рейтинга:</label>
+                            <InputNumber Min="0" Max="100" Step="1" @bind-Value="_ratingChange"
+                                         class="form-control"/>
+                            <ValidationMessage For="@(() => _playersCount)"/>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="no-select">Пароль:</label>
+                            <InputText @bind-Value="_password"
+                                       class="@GetPasswordClass()"/>
+                            @if (!PasswordValid)
+                            {
+                                <div class="invalid-feedback">Пароль должен быть от 6 до 16 символов</div>
+                            }
+                        </div>
+                        <div class="form-group">
+                            <label class="no-select">Выберите пак:</label>
+                            <InputSelect @bind-Value="_fileId">
+                                <option value="@Guid.Empty" selected>Нет</option>
+                                @foreach (var pack in _packs.Where(p => p.IsActive))
+                                {
+                                    <option value="@pack.Id">@pack.DisplayName</option>
+                                }
+                            </InputSelect>
+                            @if (!PackSelectedValid)
+                            {
+                                <div class="invalid-feedback">Нужно выбрать пак</div>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(_errorsInProgress))
+                        {
+                            <div style="color: #EF0027">@_errorsInProgress</div>
+                        }
+                        <button class="btn btn-primary mt-3" @onclick="HandleSubmit">Создать</button>
+                    </EditForm>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private HubConnection? _hubConnection;
+    private bool _progress;
+    private string _displayName = string.Empty;
+    private int _playersCount;
+    private int _ratingChange;
+    private string _password = string.Empty;
+    private long? _fileId;
+    private string _errorsInProgress = string.Empty;
+    private List<GamePackDtoModel> _packs = [];
+
+    private bool PasswordValid => string.IsNullOrEmpty(_password) ||
+                                  _password.Length is >= 6 and <= 16;
+
+    private bool PackSelectedValid => _fileId is > 0;
+
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    private string GetDisplayNameClass() => _displayName.Length is >= 4 and <= 255 ? "form-control" : "form-control is-invalid";
+    private string GetPasswordClass() => PasswordValid ? "form-control" : "form-control is-invalid";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _progress = true;
+            _errorsInProgress = string.Empty;
+            StateHasChanged();
+
+            using var response = await Http.GetAsync("/api/v1/gamepack/all?active=true");
+            if (response?.IsSuccessStatusCode != true) throw new Exception("невозможно создать лобби");
+
+            _packs = (await JsonSerializer.DeserializeAsync<List<GamePackDtoModel>>(await response.Content.ReadAsStreamAsync()))!;
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl($"{Configuration["ApiUrl"]}/gamepackhub", options => 
+                {
+                    options.SkipNegotiation = false;
+                    options.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
+                })
+                .WithAutomaticReconnect([
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(5),
+                    TimeSpan.FromSeconds(10)
+                ])
+                .ConfigureLogging(logging => 
+                {
+                    logging.SetMinimumLevel(LogLevel.Information);
+                })
+                .Build();
+
+            _hubConnection.On<GamePackDtoModel>("GamePackCreated", pack =>
+            {
+                _packs.Add(pack);
+                InvokeAsync(StateHasChanged);
+            });
+            _hubConnection.On<long>("GamePackClosed", packId =>
+            {
+                _packs.ForEach(p =>
+                {
+                    if (p.Id == packId) p.IsActive = false;
+                });
+
+                InvokeAsync(StateHasChanged);
+            });
+            _hubConnection.On<long>("GamePackOpened", packId =>
+            {
+                _packs.ForEach(p =>
+                {
+                    if (p.Id == packId) p.IsActive = true;
+                });
+
+                InvokeAsync(StateHasChanged);
+            });
+            _hubConnection.On<long>("GamePackDeleted", packId =>
+            {
+                var pack = _packs.FirstOrDefault(l => l.Id == packId);
+                if (pack == null) return;
+
+                _packs.Remove(pack);
+                InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+        }
+        catch
+        {
+            await OpenChanged.InvokeAsync(false);
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            _progress = true;
+            _errorsInProgress = string.Empty;
+            StateHasChanged();
+
+            if (!PasswordValid || _displayName.Length is < 4 or > 255 || !_fileId.HasValue) return;
+
+            var (playerCount, ratingChange) = 
+                (ushort.Parse(_playersCount.ToString()), ushort.Parse(_ratingChange.ToString()));
+
+            using var response = await Http.PutAsync(
+                "/api/v1/lobbies/all",
+                new LobbyDtoModel
+                {
+                    DisplayName = _displayName,
+                    Password = _password,
+                    Conditions = _ratingChange > 0 ? [LobbyCondition.Rating] : [],
+                    PlayersCount = playerCount,
+                    RatingChange = ratingChange,
+                    GamePackId = _fileId.Value
+                });
+            response.EnsureSuccessStatusCode();
+
+            await OpenChanged.InvokeAsync(false);
+        }
+        catch
+        {
+            _errorsInProgress = "не удалось создать лобби";
+        }
+        finally
+        {
+            _progress = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Close()
+    {
+        if (_progress) return;
+
+        _errorsInProgress = string.Empty;
+
+        await OpenChanged.InvokeAsync(false);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection != null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+
+}

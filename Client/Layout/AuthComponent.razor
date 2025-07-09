@@ -1,4 +1,5 @@
-﻿@using System.Text.Json
+﻿@using System.Net
+@using System.Text.Json
 @using Core.Extensions
 @using Core.Models.Users
 
@@ -116,8 +117,8 @@
 
         try
         {
-            var response = await Http.GetAsync("/api/v1/users", false);
-            if (response == null)
+            var response = await Http.GetAsync("/api/v1/users");
+            if (response is not { StatusCode: HttpStatusCode.OK })
             {
                 _loadingInProgress = false;
 
@@ -173,8 +174,8 @@
 
         try
         {
-            var response = await Http.GetAsync("/api/v1/users", false);
-            if (response == null)
+            var response = await Http.GetAsync("/api/v1/users");
+            if (response is not { StatusCode: HttpStatusCode.OK })
             {
                 _loadingInProgress = false;
 

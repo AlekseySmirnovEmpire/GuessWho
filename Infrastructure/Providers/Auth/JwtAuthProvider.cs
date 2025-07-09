@@ -1,5 +1,6 @@
 ﻿using Core.Database.Email;
 using Core.Models.Auth;
+using Core.Models.Users;
 using Core.Server.Database.Email;
 using Core.Server.Database.Users;
 using Core.Server.Providers;
@@ -19,15 +20,15 @@ public class JwtAuthProvider(
     public TokenModel Login(LoginModel? loginModel)
     {
         if (loginModel == null || string.IsNullOrEmpty(loginModel.Email) || string.IsNullOrEmpty(loginModel.Password))
-            throw new Exception("Заполните данные!");
+            throw new UnauthorizedAccessException("Заполните данные!");
 
         var user = userService.FindByEmail(loginModel.Email);
-        if (user == null) throw new Exception("Неверно введены данные!");
+        if (user == null) throw new UnauthorizedAccessException("Неверно введены данные!");
 
         if (!PasswordService.Validate(loginModel.Password, user.PasswordHash))
-            throw new Exception("Неверно введён пароль!");
+            throw new UnauthorizedAccessException("Неверно введён пароль!");
 
-        if (!user.IsActive) throw new Exception("Ваш аккаунт временно деактивирован или не был подтверждён!");
+        if (!user.IsActive) throw new InvalidDataException("Ваш аккаунт временно деактивирован или не был подтверждён!");
 
         var accessToken = tokenService.GenerateAccessToken(user);
         var (refreshToken, _) = tokenService.GenerateRefreshToken(user, loginModel.RememberMe);
@@ -80,12 +81,8 @@ public class JwtAuthProvider(
 
     public User GetCurrentUser(HttpContext httpContext)
     {
-        var token = httpContext.Request.Headers.Authorization.ToString()
-            .Replace("Bearer", string.Empty)
-            .Trim();
-        var user = tokenService.Validate(token);
-
-        if (string.IsNullOrEmpty(token) || user == null)
+        // Получаем пользователя из контекста
+        if (httpContext.Items["AuthenticatedUser"] is not User user)
             throw new UnauthorizedAccessException();
 
         return user;

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -6,6 +7,10 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Client;
 using Client.Services;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -19,7 +24,6 @@ var configs = new ConfigurationBuilder()
     .Build();
 
 builder.Configuration.AddConfiguration(configs);
-var c = configs["ApiUrl"];
 builder.Services.AddScoped(_ => new HttpClient
 {
     BaseAddress = new Uri(configs["ApiUrl"] ?? builder.HostEnvironment.BaseAddress)
@@ -39,5 +43,29 @@ builder.Services.AddBlazoredLocalStorage(config =>
     config.JsonSerializerOptions.WriteIndented = false;
 });
 builder.Services.AddScoped<LocalStorageService>();
+builder.Services.AddSingleton<HubConnection>(sp => 
+{
+    var hubConnection = new HubConnectionBuilder()
+        .WithUrl($"{configs["ApiUrl"]}/hubs", options => 
+        {
+            options.SkipNegotiation = false;
+            options.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
+        })
+        .WithAutomaticReconnect([
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10)
+        ])
+        .ConfigureLogging(logging => 
+        {
+            logging.SetMinimumLevel(LogLevel.Information);
+        })
+        .Build();
 
-await builder.Build().RunAsync();
+    return hubConnection;
+});
+
+var app = builder.Build();
+
+await app.RunAsync();

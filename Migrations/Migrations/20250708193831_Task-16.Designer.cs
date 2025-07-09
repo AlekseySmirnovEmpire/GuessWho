@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrations.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250626184408_Task-13")]
-    partial class Task13
+    [Migration("20250708193831_Task-16")]
+    partial class Task16
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -96,6 +96,84 @@ namespace Migrations.Migrations
                     b.ToTable("Files");
                 });
 
+            modelBuilder.Entity("Core.Server.Database.GamePacks.GamePack", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("UserCreatedId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId")
+                        .IsUnique();
+
+                    b.HasIndex("UserCreatedId");
+
+                    b.ToTable("GamePacks");
+                });
+
+            modelBuilder.Entity("Core.Server.Database.Lobbies.Lobby", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<int[]>("Conditions")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("GamePackId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("HostId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Password")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PlayersCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RatingChange")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GamePackId");
+
+                    b.HasIndex("HostId");
+
+                    b.ToTable("Lobbies");
+                });
+
             modelBuilder.Entity("Core.Server.Database.Users.User", b =>
                 {
                     b.Property<long>("Id")
@@ -120,7 +198,10 @@ namespace Migrations.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("FileId")
+                    b.Property<Guid?>("ImageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("JoinedLobbyId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("JwtToken")
@@ -151,7 +232,10 @@ namespace Migrations.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.HasIndex("FileId");
+                    b.HasIndex("ImageId")
+                        .IsUnique();
+
+                    b.HasIndex("JoinedLobbyId");
 
                     b.HasIndex("NickName")
                         .IsUnique();
@@ -159,18 +243,85 @@ namespace Migrations.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Core.Server.Database.Users.User", b =>
+            modelBuilder.Entity("Core.Server.Database.GamePacks.GamePack", b =>
                 {
                     b.HasOne("Core.Server.Database.Files.FileData", "File")
-                        .WithMany("Users")
-                        .HasForeignKey("FileId");
+                        .WithOne("GamePack")
+                        .HasForeignKey("Core.Server.Database.GamePacks.GamePack", "FileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Core.Server.Database.Users.User", "UserCreated")
+                        .WithMany("GamePacks")
+                        .HasForeignKey("UserCreatedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("File");
+
+                    b.Navigation("UserCreated");
+                });
+
+            modelBuilder.Entity("Core.Server.Database.Lobbies.Lobby", b =>
+                {
+                    b.HasOne("Core.Server.Database.GamePacks.GamePack", "GamePack")
+                        .WithMany("Lobbies")
+                        .HasForeignKey("GamePackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Core.Server.Database.Users.User", "Host")
+                        .WithMany("HostedLobby")
+                        .HasForeignKey("HostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GamePack");
+
+                    b.Navigation("Host");
+                });
+
+            modelBuilder.Entity("Core.Server.Database.Users.User", b =>
+                {
+                    b.HasOne("Core.Server.Database.Files.FileData", "Image")
+                        .WithOne("User")
+                        .HasForeignKey("Core.Server.Database.Users.User", "ImageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Core.Server.Database.Lobbies.Lobby", "JoinedLobby")
+                        .WithMany("Users")
+                        .HasForeignKey("JoinedLobbyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Image");
+
+                    b.Navigation("JoinedLobby");
                 });
 
             modelBuilder.Entity("Core.Server.Database.Files.FileData", b =>
                 {
+                    b.Navigation("GamePack")
+                        .IsRequired();
+
+                    b.Navigation("User")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Core.Server.Database.GamePacks.GamePack", b =>
+                {
+                    b.Navigation("Lobbies");
+                });
+
+            modelBuilder.Entity("Core.Server.Database.Lobbies.Lobby", b =>
+                {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("Core.Server.Database.Users.User", b =>
+                {
+                    b.Navigation("GamePacks");
+
+                    b.Navigation("HostedLobby");
                 });
 #pragma warning restore 612, 618
         }

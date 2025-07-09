@@ -15,5 +15,13 @@ public class UserModel
     [JsonPropertyName("avatarId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? ImageId { get; set; }
 
+    [JsonPropertyName("createdAt")] public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("emailConfirm")] public bool ConfirmEmail { get; set; }
+
+    [JsonPropertyName("moderatorConfirm")] public bool ConfirmByModerator { get; set; }
+
     [JsonPropertyName("active")] public bool ActiveUser { get; set; }
+
+    [JsonPropertyName("banned")] public bool IsBanned { get; set; }
 }

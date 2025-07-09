@@ -2,24 +2,24 @@
 @inherits LayoutComponentBase
 <div class="page">
 
-    @if (_user != null)
+    @if (User != null)
     {
         <div class="sidebar">
-            <NavMenu User="_user"/>
+            <NavMenu User="User"/>
         </div>
     }
     <SignInComponent @bind-SignInOpen="_signInOpen" @bind-SignUpOpen="_signUpOpen" ReloadUserChanged="@HandleValue"/>
     <SignUpComponent @bind-SignInOpen="_signInOpen" @bind-SignUpOpen="_signUpOpen"/>
-    <ChangeAvatarComponent @bind-User="_user" @bind-Open="_changeAvatar" @bind-ReloadAvatar="_reloadAvatar"/>
-    <UserSettingsComponent @bind-User="_user" @bind-ReloadUser="_reloadUser" @bind-Open="_settingsOpen"/>
+    <ChangeAvatarComponent @bind-User="User" @bind-Open="_changeAvatar" @bind-ReloadAvatar="_reloadAvatar"/>
+    <UserSettingsComponent @bind-User="User" @bind-ReloadUser="_reloadUser" @bind-Open="_settingsOpen"/>
 
     <div class="main-container">
         <main>
             <div class="top-row px-4">
-                <AuthComponent 
-                    @bind-SignInOpen="_signInOpen" 
+                <AuthComponent
+                    @bind-SignInOpen="_signInOpen"
                     @bind-SignUpOpen="_signUpOpen"
-                    @bind-User="_user" 
+                    @bind-User="User"
                     ReloadUser="@_reloadUser"
                     ReloadAvatar="_reloadAvatar"
                     @bind-ChangeAvatarOpen="_changeAvatar"
@@ -44,9 +44,10 @@
     private bool _signUpOpen;
     private bool _changeAvatar;
     private bool _settingsOpen;
-    private UserModel? _user;
     private bool _reloadUser;
     private bool _reloadAvatar;
+
+    [Parameter] public UserModel? User { get; set; }
 
     private async Task HandleValue(bool newValue)
     {
