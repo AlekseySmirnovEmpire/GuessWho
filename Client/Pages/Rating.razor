@@ -1,4 +1,5 @@
 ﻿@page "/rating"
+@using System.Net
 @using System.Text.Json
 @using Core.Models.Users
 
@@ -26,8 +27,8 @@
                         <td>@user.NickName</td>
                         <td>@user.Rating</td>
                         <td>
-                            <span class="streak-badge @RatingService.GetRatingMark((ushort)user.Rating)">
-                                @RatingService.GetRatingName((ushort)user.Rating)
+                            <span class="streak-badge @RatingService.GetRatingMark(user.Rating)">
+                                @RatingService.GetRatingName(user.Rating)
                             </span>
                         </td>
                     </tr>
@@ -71,6 +72,13 @@
         try
         {
             using var response = await Http.GetAsync("/api/v1/users/rating");
+            if (response?.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Navigation.NavigateTo("/error/401");
+            
+                return;
+            }
+            
             if (response?.IsSuccessStatusCode != true) return;
 
             _allUsers = await JsonSerializer.DeserializeAsync<List<UserModel>>(await response.Content.ReadAsStreamAsync()) ?? [];

@@ -1,4 +1,5 @@
 ﻿using Core.Models.Users;
+using Core.Server.Database.Users;
 using Core.Server.Providers;
 using Core.Server.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ namespace Server.Controllers;
 
 [Route("/api/v1/[controller]")]
 [JwtAuth]
-public class UsersController(IAuthProvider provider, ILogger<UsersController> logger, UserService service) 
+public class UsersController(IAuthProvider provider, ILogger<UsersController> logger, UserService service)
     : BaseApiController
 {
     [HttpGet]
@@ -23,7 +24,7 @@ public class UsersController(IAuthProvider provider, ILogger<UsersController> lo
                 NickName = user.NickName,
                 Role = user.Role,
                 Rating = user.Rating,
-                ImageId = user.FileId
+                ImageId = user.ImageId
             });
         }
         catch (Exception ex)
@@ -80,6 +81,61 @@ public class UsersController(IAuthProvider provider, ILogger<UsersController> lo
             {
                 _ => BadRequest()
             };
+        }
+    }
+
+    [HttpPost]
+    [Route("confirm/{userId:long}")]
+    public IActionResult ConfirmByModerator(long userId)
+    {
+        try
+        {
+            if (!service.ConfirmUserByModerator(userId, provider.GetCurrentUser(HttpContext))) return BadRequest();
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            if (ex is UnauthorizedAccessException) return Forbid();
+
+            return BadRequest();
+        }
+    }
+
+    [HttpPost]
+    [Route("ban/{userId:long}")]
+    public IActionResult ChangeUserBanStatus(long userId)
+    {
+        try
+        {
+            if (!service.ChangeUserBanStatus(provider.GetCurrentUser(HttpContext), userId)) return BadRequest();
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            if (ex is UnauthorizedAccessException) return Forbid();
+
+            return BadRequest();
+        }
+    }
+
+    [HttpGet]
+    [Route("all")]
+    public IActionResult GetAll()
+    {
+        try
+        {
+            return Ok(service.FindAllUsers(provider.GetCurrentUser(HttpContext)));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            if (ex is UnauthorizedAccessException) return Forbid();
+
+            return BadRequest();
         }
     }
 }

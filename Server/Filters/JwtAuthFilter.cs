@@ -12,7 +12,30 @@ public class JwtAuthFilter(IHttpContextAccessor httpContextAccessor, ITokenServi
         var token = httpContextAccessor.HttpContext?.Request.Headers.Authorization.ToString()
             .Replace("Bearer", string.Empty)
             .Trim();
-        if (string.IsNullOrEmpty(token) || tokenService.Validate(token) == null) 
+
+        if (string.IsNullOrEmpty(token))
+        {
             context.Result = new UnauthorizedResult();
+
+            return;
+        }
+
+        var user = tokenService.Validate(token);
+        if (user == null)
+        {
+            context.Result = new UnauthorizedResult();
+
+            return;
+        }
+
+        // Добавляем пользователя в контекст запроса
+        try
+        {
+            httpContextAccessor.HttpContext!.Items["AuthenticatedUser"] = user;
+        }
+        catch
+        {
+            //
+        }
     }
 }

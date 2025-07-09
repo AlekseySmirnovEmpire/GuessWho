@@ -112,7 +112,7 @@
                             {
                                 if (_wrongDataReset)
                                 {
-                                    <div style="color: #EF0027">Данный email не зарегистрирован</div>
+                                    <div style="color: #EF0027">Введенны некоректные данные</div>
                                 }
 
                                 <button type="submit" class="btn btn-primary mt-3" @onclick="HandleResetSubmit">
@@ -167,6 +167,10 @@
                             if (_wrongData)
                             {
                                 <div style="color: #EF0027">Введены неверные данные</div>
+                            } 
+                            else if (_banned)
+                            {
+                                <div style="color: #EF0027">Ваш аккаунт был забанен</div>
                             }
 
                             <button type="submit" class="btn btn-primary mt-3" @onclick="HandleSubmit">Войти</button>
@@ -194,6 +198,7 @@
     private bool _progressReset;
     private bool _wrongDataReset;
     private bool _resetPasswordSuccess;
+    private bool _banned;
 
     private bool EmailValid => string.IsNullOrEmpty(_email) ||
                                System.Text.RegularExpressions.Regex.IsMatch(
@@ -225,6 +230,7 @@
 
         SignInOpen = false;
         _passwordValid = true;
+        _banned = false;
         _serverError = false;
         await SignInOpenChanged.InvokeAsync(false);
         _resetPassword = false;
@@ -270,6 +276,7 @@
             _wrongDataReset = false;
             _resetPasswordSuccess = false;
             _resetServerError = false;
+            _banned = false;
             using var response = await Http.PostAsync<string>(
                 $"/api/v1/password/email?value={_emailReset}",
                 null);
@@ -311,6 +318,7 @@
             _progress = true;
             _wrongData = false;
             _serverError = false;
+            _banned = false;
             using var response = await Http.PostAsync(
                 "/api/v1/auth/login",
                 new LoginModel
@@ -319,11 +327,14 @@
                     Password = _password,
                     RememberMe = _rememberMe
                 });
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            switch (response.StatusCode)
             {
-                _wrongData = true;
-
-                return;
+                case HttpStatusCode.Unauthorized:
+                    _wrongData = true;
+                    return;
+                case HttpStatusCode.Forbidden:
+                    _banned = true;
+                    return;
             }
 
             if (!response.IsSuccessStatusCode)

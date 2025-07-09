@@ -4,6 +4,7 @@ using Core.Server.Providers;
 using Core.Server.Repositories;
 using Core.Server.Services;
 using Core.Server.Services.Interfaces;
+using Core.Server.Services.Lobbies;
 using Core.Settings;
 using Core.Utils;
 using Infrastructure.Managers;
@@ -15,6 +16,8 @@ using NLog;
 using NLog.Targets;
 using NLog.Web;
 using Server.Controllers;
+using Server.Hubs;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +70,7 @@ builder.Services.AddScoped<UsersController>();
 builder.Services.AddScoped<ImagesController>();
 builder.Services.AddScoped<ConfirmController>();
 builder.Services.AddScoped<PasswordController>();
+builder.Services.AddScoped<LobbiesController>();
 
 #endregion
 
@@ -84,6 +88,8 @@ builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IEmailTemplatingService, SubstitutionEmailTemplatingService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<FileDataService>();
+builder.Services.AddScoped<LobbyService>();
+builder.Services.AddScoped<GamePackService>();
 
 #endregion
 
@@ -92,6 +98,8 @@ builder.Services.AddScoped<FileDataService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEmailSendingQueueRepository, EmailSendingQueueRepository>();
 builder.Services.AddScoped<IFileDataRepository, FileDataRepository>();
+builder.Services.AddScoped<ILobbyRepository, LobbyRepository>();
+builder.Services.AddScoped<IGamePackRepository, GamePackRepository>();
 
 #endregion
 
@@ -103,15 +111,32 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ => 
+    ConnectionMultiplexer.Connect(
+        Environment.GetEnvironmentVariable("ASPNETCORE_REDIS_CONNECTION_STRING") ?? string.Empty));
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorApp",
         policy => policy
-            .WithOrigins(Environment.GetEnvironmentVariable("CLIENT_URL")!) // URL вашего Blazor-приложения
+            .WithOrigins(Environment.GetEnvironmentVariable("CLIENT_URL")!)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials());
 });
+builder.Services.AddSignalR()
+    .AddStackExchangeRedis(options => 
+    {
+        options.ConnectionFactory = async writer => 
+        {
+            var config = new ConfigurationOptions
+            {
+                AbortOnConnectFail = false,
+            };
+            config.EndPoints.Add(
+                Environment.GetEnvironmentVariable("ASPNETCORE_REDIS_CONNECTION_STRING") ?? string.Empty);
+            return await ConnectionMultiplexer.ConnectAsync(config, writer);
+        };
+    });
 
 #endregion
 
@@ -132,6 +157,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowBlazorApp");
+app.UseRouting();
 
 app.UseHttpsRedirection();
 
@@ -139,6 +165,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<LobbyHub>("/lobbyhub");
+app.MapHub<GamePackHub>("/gamepackhub");
 
 #region Старт сервера
 

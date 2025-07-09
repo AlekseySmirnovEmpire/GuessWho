@@ -15,12 +15,11 @@ public class CustomHttpClient(
 {
     public string? GetBaseAddress() => config["ApiUrl"];
     
-    public async Task<HttpResponseMessage?> GetAsync(string requestUri, bool needHandleError = true)
+    public async Task<HttpResponseMessage?> GetAsync(string requestUri)
     {
         try
         {
             var response = await Send(HttpMethod.Get, requestUri);
-            if (needHandleError) await HandleError(response);
 
             return response;
         }
@@ -29,7 +28,7 @@ public class CustomHttpClient(
             return null;
         }
     }
-    
+
     public async Task<HttpResponseMessage> PostAsync<TIn>(string requestUri, TIn? body)
     {
         var bodyReq = body == null 
@@ -38,7 +37,7 @@ public class CustomHttpClient(
 
         return await Send(HttpMethod.Post, requestUri, bodyReq);
     }
-    
+
     public async Task<HttpResponseMessage> PutAsync<TIn>(string requestUri, TIn? body)
     {
         var bodyReq = body == null 
@@ -65,12 +64,12 @@ public class CustomHttpClient(
         }
     }
 
-    private async Task RefreshAuth()
+    private async Task<bool> RefreshAuth()
     {
         try
         {
             var tokenModel = await localStorage.GetItemAsync<TokenModel>("Guess_Who");
-            if (string.IsNullOrEmpty(tokenModel?.Refresh)) return;
+            if (string.IsNullOrEmpty(tokenModel?.Refresh)) return false;
 
             var response = await client.PostAsync(
                 $"{config["ApiUrl"]}/api/v1/auth/refresh",
@@ -79,19 +78,21 @@ public class CustomHttpClient(
             {
                 await localStorage.SetItemAsync("Guess_Who", new object());
 
-                return;
+                return false;
             }
             
             var newTokenModel = await JsonSerializer.DeserializeAsync<TokenModel>(
                 await response.Content.ReadAsStreamAsync());
-            if (string.IsNullOrEmpty(newTokenModel?.Access)) return;
+            if (string.IsNullOrEmpty(newTokenModel?.Access)) return false;
 
             await localStorage.SetItemAsync("Guess_Who", newTokenModel);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", newTokenModel.Access);
+
+            return true;
         }
         catch
         {
-            //
+            return false;
         }
     }
 
@@ -102,9 +103,11 @@ public class CustomHttpClient(
         if (body != null) request.Content = body;
 
         var response = await client.SendAsync(request);
-        if (response.StatusCode != HttpStatusCode.Unauthorized) return response;
+        if (response.StatusCode != HttpStatusCode.Unauthorized ||
+            !await RefreshAuth() ||
+            string.IsNullOrEmpty((await localStorage.GetItemAsync<TokenModel>("Guess_Who"))?.Refresh)) 
+            return response;
 
-        await RefreshAuth();
         var token = await localStorage.GetItemAsync<TokenModel>("Guess_Who");
         using var httpClient = new HttpClient();
         httpClient.BaseAddress = client.BaseAddress;
@@ -113,22 +116,5 @@ public class CustomHttpClient(
         if (body != null) newRequest.Content = body;
 
         return await httpClient.SendAsync(newRequest);
-    }
-
-    private async Task HandleError(HttpResponseMessage response)
-    {
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            manager.NavigateTo("/error/403");
-        }
-        else if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            manager.NavigateTo("/error/404");
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            // Обработка других ошибок (500, 404 и т. д.)
-            manager.NavigateTo("/error");
-        }
     }
 }

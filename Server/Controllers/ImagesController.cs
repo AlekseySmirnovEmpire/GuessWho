@@ -16,10 +16,9 @@ public class ImagesController(FileDataService service, ILogger<ImagesController>
     {
         try
         {
-            var user = provider.GetCurrentUser(HttpContext);
             return Ok(new
             {
-                avatarId = service.UploadImage(image, user.Id)
+                avatarId = service.UploadImage(image, provider.GetCurrentUser(HttpContext))
             });
         }
         catch (Exception ex)

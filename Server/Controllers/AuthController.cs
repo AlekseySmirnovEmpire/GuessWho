@@ -23,6 +23,7 @@ public class AuthController(IAuthProvider authProvider) : BaseApiController
             return ex switch
             {
                 UnauthorizedAccessException => Unauthorized(),
+                InvalidDataException => Forbid(),
                 _ => BadRequest(new
                 {
                     error = ex.Message
