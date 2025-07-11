@@ -5,6 +5,7 @@ using Core.Server.Providers;
 using Core.Server.Repositories;
 using Core.Server.Services;
 using Core.Server.Services.Interfaces;
+using Core.Server.Services.Lobbies;
 using Core.Settings;
 using Core.Utils;
 using Infrastructure.Managers;
@@ -65,7 +66,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IEmailSendingQueueRepository, EmailSendingQueueRepository>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ILobbyRepository, LobbyRepository>();
+
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<LobbyService>();
 
 builder.Services.AddSingleton<IMessageBusProvider, RedisMessageBusProvider>();
 builder.Services.AddSingleton<IMessageBusManager, MessageBusManager>();
@@ -98,6 +102,15 @@ builder.Services.AddQuartz(q =>
         .WithIdentity(nameof(UserCleanerJob))
         .WithSimpleSchedule(s => s
             .WithIntervalInHours(24) // Интервал выполнения
+            .RepeatForever()
+        )
+        .StartNow()
+    );
+    q.AddTrigger(t => t
+        .ForJob(nameof(OldLobbiesCleanerJob))
+        .WithIdentity(nameof(OldLobbiesCleanerJob))
+        .WithSimpleSchedule(s => s
+            .WithIntervalInHours(2) // Интервал выполнения
             .RepeatForever()
         )
         .StartNow()

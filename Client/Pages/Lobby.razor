@@ -1,193 +1,180 @@
-﻿@page "/lobby"
-@using Core.Models.Lobbies
-@using Core.Models.Users
-@using Microsoft.AspNetCore.Http.Connections
-@using Microsoft.AspNetCore.SignalR.Client
-@implements IAsyncDisposable
+﻿@page "/lobby/{LobbyId}"
+@using System.Net
+@inject NavigationManager Navigation
 
-<CreateLobbyComponent @bind-Open="_openCreatingTab"/>
+<div class="lobby-container">
+    <h3 style="color: #EF0027;">@(CurrentLobby?.Name ?? "Загрузка...")</h3>
 
-<div class="lobby-page">
-    <div class="lobby-controls">
-        <button class="create-button" @onclick="CreateLobby">
-            <i class="fa fas fa-plus-circle"></i> Создать лобби
-        </button>
-
-        <div class="filters">
-            <div class="search-box">
-                <i class="fa fas fa-search"></i>
-                <input type="text" @bind="_searchText" @bind:event="oninput"
-                       placeholder="Поиск по названию или автору..."/>
-            </div>
-
-            <div class="filter-options">
-                <label class="filter-checkbox">
-                    <input type="checkbox" @bind="_voiceChatFilter"/>
-                    <span class="checkmark"></span>
-                    <i class="fa fas fa-microphone"></i> С войс чатом
-                </label>
-
-                <label class="filter-checkbox">
-                    <input type="checkbox" @bind="_passwordFilter"/>
-                    <span class="checkmark"></span>
-                    <i class="fa fas fa-lock"></i> С паролем
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <h3 class="page-title"><i class="fa fas fa-door-open"></i> Игровые лобби</h3>
-
-    @if (FilteredLobbies.Count == 0)
+    @if (CurrentLobby == null)
     {
-        <div class="empty-message">
-            <i class="fa fas fa-info-circle"></i>
-            <p>@(IsFiltered ? "Нет лобби по вашему запросу" : "Нет активных лобби. Создайте свое!")</p>
-        </div>
+        <p>Загрузка данных лобби...</p>
     }
     else
     {
-        <div class="lobby-container">
-            @foreach (var lobby in FilteredLobbies)
-            {
-                <div class="lobby-card @lobby.AnimationClass" @onclick="() => HandleLobbyClick(lobby)" @key="lobby.Id">
-                    <div class="card-header">
-                        <h4><i class="fa fas fa-chess-knight"></i> @lobby.DisplayName</h4>
-                        <div class="lobby-meta">
-                            @if (!string.IsNullOrEmpty(lobby.Password))
-                            {
-                                <span class="password-badge"><i class="fa fas fa-lock"></i></span>
-                            }
-                            <span class="players-count">
-                                <i class="fa fas fa-users"></i> @lobby.PlayersCount/@lobby.Users.Count
-                            </span>
+        <div class="teams-container">
+            <!-- Первая команда -->
+            <div class="team-section">
+                <div class="team-players">
+                    @foreach (var player in CurrentLobby.TeamA.Players)
+                    {
+                        <div class="player-avatar">
+                            <img src="@player.AvatarUrl" alt="@player.Name" />
+                            <span>@player.Name</span>
                         </div>
-                    </div>
-
-                    <div class="lobby-author">
-                        <i class="fa fas fa-user"></i>
-                        <span>Создатель: @lobby.Host.NickName</span>
-                    </div>
-
-                    <div class="lobby-image"
-                         style="background-image: url('@($"{Http.GetBaseAddress()}/api/v1/images/{lobby.Host.ImageId}")')"></div>
-
-                    <div class="lobby-conditions">
-                        <div
-                            class="condition @(lobby.Conditions.Contains(LobbyCondition.WithMicrophone) ? "active" : "")">
-                            <i class="fa fas fa-microphone"></i>
-                            <span>Голосовой чат: @(lobby.Conditions.Contains(LobbyCondition.WithMicrophone) ? "Есть" : "Нет")</span>
-                        </div>
-                        <div class="condition">
-                            <i class="fa fas fa-signal"></i>
-                            <span>Статус: @GetLobbyStatus(lobby)</span>
-                        </div>
-                    </div>
+                    }
                 </div>
-            }
+
+                <div class="battlefield">
+                    <div class="grid-header">
+                        @for (var c = 'A'; c <= 'H'; c++)
+                        {
+                            <div class="grid-coord">@c</div>
+                        }
+                    </div>
+                    @for (var y = 1; y <= 8; y++)
+                    {
+                        <div class="grid-row">
+                            <div class="grid-coord">@y</div>
+                            @for (var x = 1; x <= 8; x++)
+                            {
+                                <div class="grid-cell" 
+                                     @onclick="() => HandleCellClick(x, y, 1)"
+                                     style="background-color: @GetCellColor(x, y, 1);">
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Разделительная линия -->
+            <div class="team-divider"></div>
+
+            <!-- Вторая команда -->
+            <div class="team-section">
+                <div class="battlefield">
+                    <div class="grid-header">
+                        @for (char c = 'A'; c <= 'H'; c++)
+                        {
+                            <div class="grid-coord">@c</div>
+                        }
+                    </div>
+                    @for (int y = 1; y <= 8; y++)
+                    {
+                        <div class="grid-row">
+                            <div class="grid-coord">@y</div>
+                            @for (int x = 1; x <= 8; x++)
+                            {
+                                <div class="grid-cell" 
+                                     @onclick="() => HandleCellClick(x, y, 2)"
+                                     style="background-color: @GetCellColor(x, y, 2);">
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="team-players">
+                    @foreach (var player in CurrentLobby.TeamB.Players)
+                    {
+                        <div class="player-avatar">
+                            <img src="@player.AvatarUrl" alt="@player.Name" />
+                            <span>@player.Name</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Скамейка запасных -->
+        <div class="bench-container">
+            <h4>Запасные игроки</h4>
+            <div class="bench-players">
+                @foreach (var player in CurrentLobby.BenchPlayers)
+                {
+                    <div class="player-avatar bench">
+                        <img src="@player.AvatarUrl" alt="@player.Name" />
+                        <span>@player.Name</span>
+                    </div>
+                }
+            </div>
         </div>
     }
 </div>
 
 @code {
-    private HubConnection? _hubConnection;
-    private List<LobbyDtoModel> _lobbies = [];
-    private string _searchText = string.Empty;
-    private bool _voiceChatFilter;
-    private bool _passwordFilter;
-    private bool _openCreatingTab;
+    [Parameter]
+    public required Guid LobbyId { get; set; }
 
-    private List<LobbyDtoModel> FilteredLobbies => _lobbies
-        .Where(l => string.IsNullOrEmpty(_searchText) ||
-                    l.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-                    l.Host.NickName.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
-        .Where(l => !_voiceChatFilter || l.Conditions.Count == 0 || l.Conditions.Contains(LobbyCondition.WithMicrophone))
-        .Where(l => !_passwordFilter || string.IsNullOrEmpty(l.Password))
-        .ToList();
+    private LobbyModel CurrentLobby { get; set; }
+    private bool isLoading = true;
 
-    private bool IsFiltered => !string.IsNullOrEmpty(_searchText) || _voiceChatFilter || _passwordFilter;
+    private string GetCellColor(int x, int y, int team)
+    {
+        // Ваша логика определения цвета клетки
+        return (x + y) % 2 == 0 ? "#FFFFFF" : "#F0F0F0";
+    }
+
+    private void HandleCellClick(int x, int y, int team)
+    {
+        // Обработка клика по клетке
+    }
+
+    // Модели данных
+    public class LobbyModel
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Team TeamA { get; set; }
+        public Team TeamB { get; set; }
+        public List<Player> BenchPlayers { get; set; }
+    }
+
+    public class Team
+    {
+        public List<Player> Players { get; set; }
+    }
+
+    public class Player
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string AvatarUrl { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _hubConnection = new HubConnectionBuilder()
-                .WithUrl($"{Configuration["ApiUrl"]}/lobbyhub", options =>
-                {
-                    options.SkipNegotiation = false;
-                    options.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
-                })
-                .WithAutomaticReconnect([
-                    TimeSpan.Zero,
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(5),
-                    TimeSpan.FromSeconds(10)
-                ])
-                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Information); })
-                .Build();
-
-            _hubConnection.On<LobbyDtoModel>("LobbyCreated", lobby =>
+            if (LobbyId == Guid.Empty)
             {
-                lobby.AnimationClass = "card-appear";
-                _lobbies.Add(lobby);
-                InvokeAsync(StateHasChanged);
+                Navigation.NavigateTo("/error/404");
 
-                Task.Delay(1000).ContinueWith(_ =>
-                {
-                    lobby.AnimationClass = string.Empty;
-                    InvokeAsync(StateHasChanged);
-                });
-            });
-
-            _hubConnection.On<Guid>("LobbyClosed", lobbyId =>
+                return;
+            }
+            
+            var response = await Http.GetAsync($"/api/v1/lobbies/{LobbyId}");
+            if (response == null) throw new Exception();
+            
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                var lobby = _lobbies.FirstOrDefault(l => l.Id == lobbyId);
-                if (lobby == null) return;
+                Navigation.NavigateTo("/error/401");
 
-                lobby.AnimationClass = "card-disappear";
-                InvokeAsync(StateHasChanged);
+                return;
+            }
 
-                Task.Delay(1000).ContinueWith(_ =>
-                {
-                    _lobbies.Remove(lobby);
-                    InvokeAsync(StateHasChanged);
-                });
-            });
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Navigation.NavigateTo("/error/403");
 
-            await _hubConnection.StartAsync();
+                return;
+            }
+            
+            response.EnsureSuccessStatusCode();
         }
         catch
         {
             Navigation.NavigateTo("/error");
         }
     }
-
-    private string GetLobbyStatus(LobbyDtoModel lobby)
-    {
-        if (lobby.Users.Count >= lobby.PlayersCount)
-            return "Заполнено";
-
-        return lobby.Users.Count >= lobby.PlayersCount * 0.8 ? "Почти заполнено" : "Есть места";
-    }
-
-    private void CreateLobby()
-    {
-        _openCreatingTab = true;
-        StateHasChanged();
-    }
-
-    private void HandleLobbyClick(LobbyDtoModel lobby)
-    {
-        // Ваша логика при клике на лобби
-        Console.WriteLine($"Выбрано лобби: {lobby.DisplayName}");
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_hubConnection != null)
-        {
-            await _hubConnection.DisposeAsync();
-        }
-    }
-
 }
