@@ -1,0 +1,237 @@
+﻿@page "/lobbies"
+@using System.Net
+@using System.Text.Json
+@using Core.Models.Lobbies
+@using Microsoft.AspNetCore.Http.Connections
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+
+<CreateLobbyComponent @bind-Open="_openCreatingTab"/>
+<LobbyPasswordCheck @bind-Open="_openPasswordCheck" @bind-LobbyId="_openPasswordLobbyId"/>
+
+<div class="lobby-page">
+    <div class="lobby-controls">
+        <button class="create-button" @onclick="CreateLobby">
+            <i class="fa fas fa-plus-circle"></i> Создать лобби
+        </button>
+
+        <div class="filters">
+            <div class="search-box">
+                <i class="fa fas fa-search"></i>
+                <input type="text" @bind="_searchText" @bind:event="oninput"
+                       placeholder="Поиск по названию или автору..."/>
+            </div>
+
+            <div class="filter-options">
+                <label class="filter-checkbox">
+                    <input type="checkbox" @bind="_voiceChatFilter"/>
+                    <span class="checkmark"></span>
+                    <i class="fa fas fa-microphone"></i> С войс чатом
+                </label>
+
+                <label class="filter-checkbox">
+                    <input type="checkbox" @bind="_passwordFilter"/>
+                    <span class="checkmark"></span>
+                    <i class="fa fas fa-lock"></i> С паролем
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="page-title"><i class="fa fas fa-door-open"></i> Игровые лобби</h3>
+
+    @if (FilteredLobbies.Count == 0)
+    {
+        <div class="empty-message">
+            <i class="fa fas fa-info-circle"></i>
+            <p>@(IsFiltered ? "Нет лобби по вашему запросу" : "Нет активных лобби. Создайте свое!")</p>
+        </div>
+    }
+    else
+    {
+        <div class="lobby-container">
+            @foreach (var lobby in FilteredLobbies)
+            {
+                <div class="lobby-card @lobby.AnimationClass" @onclick="() => HandleLobbyClick(lobby)" @key="lobby.Id">
+                    <div class="card-header">
+                        <h4><i class="fa fas fa-chess-knight"></i> @lobby.DisplayName</h4>
+                        <div class="lobby-meta">
+                            @if (!string.IsNullOrEmpty(lobby.Password))
+                            {
+                                <span class="password-badge"><i class="fa fas fa-lock"></i></span>
+                            }
+                            <span class="players-count">
+                                <i class="fa fas fa-users"></i> @lobby.Users.Count/@lobby.PlayersCount
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="lobby-author">
+                        <i class="fa fas fa-user"></i>
+                        <span>Создатель: @lobby.Host.NickName</span>
+                    </div>
+
+                    <div class="lobby-image"
+                         style="background-image: url('@($"{Http.GetBaseAddress()}/api/v1/images/{lobby.Host.ImageId}")')"></div>
+
+                    <div class="lobby-conditions">
+                        <div
+                            class="condition @(lobby.Conditions.Contains(LobbyCondition.WithMicrophone) ? "active" : "")">
+                            <i class="fa fas fa-microphone"></i>
+                            <span>Голосовой чат: @(lobby.Conditions.Contains(LobbyCondition.WithMicrophone) ? "Есть" : "Нет")</span>
+                        </div>
+                        <div class="condition">
+                            <i class="fa fas fa-signal"></i>
+                            <span>Статус: @GetLobbyStatus(lobby)</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private HubConnection? _hubConnection;
+    private readonly List<LobbyDtoModel> _lobbies = [];
+    private string _searchText = string.Empty;
+    private bool _voiceChatFilter;
+    private bool _passwordFilter;
+    private bool _openCreatingTab;
+    private bool _openPasswordCheck;
+    private Guid _openPasswordLobbyId = Guid.Empty;
+
+    private List<LobbyDtoModel> FilteredLobbies => _lobbies
+        .Where(l => string.IsNullOrEmpty(_searchText) ||
+                    l.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    l.Host.NickName.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+        .Where(l => !_voiceChatFilter || l.Conditions.Count == 0 || l.Conditions.Contains(LobbyCondition.WithMicrophone))
+        .Where(l => !_passwordFilter || string.IsNullOrEmpty(l.Password))
+        .ToList();
+
+    private bool IsFiltered => !string.IsNullOrEmpty(_searchText) || _voiceChatFilter || _passwordFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl($"{Configuration["ApiUrl"]}/lobbyhub", options =>
+                {
+                    options.SkipNegotiation = false;
+                    options.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
+                })
+                .WithAutomaticReconnect([
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(5),
+                    TimeSpan.FromSeconds(10)
+                ])
+                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Information); })
+                .Build();
+
+            _hubConnection.On<LobbyDtoModel>("LobbyCreated", lobby => LobbyInit(lobby).Wait());
+
+            _hubConnection.On<Guid>("LobbyClosed", lobbyId =>
+            {
+                var lobby = _lobbies.FirstOrDefault(l => l.Id == lobbyId);
+                if (lobby == null) return;
+
+                lobby.AnimationClass = "card-disappear";
+                StateHasChanged();
+
+                Task.Delay(1000).ContinueWith(_ =>
+                {
+                    _lobbies.Remove(lobby);
+                    StateHasChanged();
+                })
+                .Wait();
+            });
+
+            await _hubConnection.StartAsync();
+
+            var response = await Http.GetAsync("/api/v1/lobbies");
+            if (response == null)
+            {
+                Navigation.NavigateTo("/error/404");
+
+                return;
+            }
+            
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Navigation.NavigateTo("/error/401");
+
+                return;
+            }
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Navigation.NavigateTo("/error/403");
+
+                return;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            foreach (var lobby in 
+                     await JsonSerializer.DeserializeAsync<List<LobbyDtoModel>>(await response.Content.ReadAsStreamAsync()) ?? [])
+            {
+                await LobbyInit(lobby);
+            }
+        }
+        catch
+        {
+            Navigation.NavigateTo("/error");
+        }
+    }
+
+    private async Task LobbyInit(LobbyDtoModel lobby)
+    {
+        lobby.AnimationClass = "card-appear";
+        _lobbies.Add(lobby);
+        StateHasChanged();
+
+        await Task.Delay(500).ContinueWith(_ =>
+        {
+            lobby.AnimationClass = string.Empty;
+            StateHasChanged();
+        });
+    }
+
+    private string GetLobbyStatus(LobbyDtoModel lobby)
+    {
+        if (lobby.Users.Count >= lobby.PlayersCount)
+            return "Заполнено";
+
+        return lobby.Users.Count >= lobby.PlayersCount * 0.8 ? "Почти заполнено" : "Есть места";
+    }
+
+    private void CreateLobby()
+    {
+        _openCreatingTab = true;
+        StateHasChanged();
+    }
+
+    private void HandleLobbyClick(LobbyDtoModel lobby)
+    {
+        if (string.IsNullOrEmpty(lobby.Password))
+        {
+            Navigation.NavigateTo($"/lobby/{lobby.Id}");
+            
+            return;
+        }
+
+        _openPasswordLobbyId = lobby.Id;
+        _openPasswordCheck = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection != null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+
+}

@@ -5,10 +5,10 @@ namespace Server.Hubs;
 
 public class LobbyHub(ILogger<LobbyHub> logger) : Hub
 {
-    public async Task CreateLobby(LobbyDtoModel lobby)
+    public async Task CreateLobby(LobbyDtoModel lobbyId)
     {
-        logger.LogInformation($"Creating lobby: {lobby.DisplayName}");
-        await Clients.All.SendAsync("LobbyCreated", lobby);
+        logger.LogInformation($"Creating lobby: '{lobbyId}'");
+        await Clients.All.SendAsync("LobbyCreated", lobbyId);
     }
 
     public async Task CloseLobby(Guid lobbyId)

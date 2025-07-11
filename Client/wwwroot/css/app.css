@@ -192,6 +192,14 @@ code {
     -ms-user-select: none; /* IE/Edge */
 }
 
+.full-width-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
 /*@media (prefers-color-scheme: light) {*/
 /*    #app-loading {*/
 /*        background: #121212;*/

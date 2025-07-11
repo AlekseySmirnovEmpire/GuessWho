@@ -1,4 +1,5 @@
-﻿@using System.Text.Json
+﻿@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
 @using Core.Models.GamePacks
 @using Core.Models.Lobbies
 @using Microsoft.AspNetCore.Http.Connections
@@ -26,50 +27,40 @@
                         <DataAnnotationsValidator/>
                         <div class="form-group">
                             <label class="no-select">Название:</label>
-                            <InputText @bind-Value="_displayName" maxlength="255"
-                                       class="@GetDisplayNameClass()"/>
-                            @if (_displayName.Length > 255)
-                            {
-                                <div class="invalid-feedback">Никнейм должен быть от 4 до 255 символов</div>
-                            }
+                            <InputText @bind-Value="_lobbyModel.DisplayName" maxlength="255" minlength="4"
+                                       class="form-control"/>
+                            <ValidationMessage For="@(() => _lobbyModel.DisplayName)"/>
                         </div>
 
                         <div class="form-group">
                             <label class="no-select">Количество игроков:</label>
-                            <InputNumber Min="2" Max="10" Step="2" @bind-Value="_playersCount"
+                            <InputNumber Min="2" Max="10" Step="2" @bind-Value="_lobbyModel.PlayersCount"
                                          class="form-control"/>
-                            <ValidationMessage For="@(() => _playersCount)"/>
+                            <ValidationMessage For="@(() => _lobbyModel.PlayersCount)"/>
                         </div>
 
                         <div class="form-group">
                             <label class="no-select">Изменение рейтинга:</label>
-                            <InputNumber Min="0" Max="100" Step="1" @bind-Value="_ratingChange"
+                            <InputNumber Min="0" Max="100" Step="10" @bind-Value="_lobbyModel.RatingChange"
                                          class="form-control"/>
-                            <ValidationMessage For="@(() => _playersCount)"/>
+                            <ValidationMessage For="@(() => _lobbyModel.RatingChange)"/>
                         </div>
 
                         <div class="form-group">
                             <label class="no-select">Пароль:</label>
-                            <InputText @bind-Value="_password"
-                                       class="@GetPasswordClass()"/>
-                            @if (!PasswordValid)
-                            {
-                                <div class="invalid-feedback">Пароль должен быть от 6 до 16 символов</div>
-                            }
+                            <InputText type="password" @bind-Value="_lobbyModel.Password" class="form-control" maxlength="16"
+                                       minlength="6"/>
+                            <ValidationMessage For="@(() => _lobbyModel.Password)"/>
                         </div>
                         <div class="form-group">
                             <label class="no-select">Выберите пак:</label>
-                            <InputSelect @bind-Value="_fileId">
-                                <option value="@Guid.Empty" selected>Нет</option>
+                            <InputSelect class="full-width-select" @bind-Value="_lobbyModel.PackId">
+                                <option value="0" selected>Нет</option>
                                 @foreach (var pack in _packs.Where(p => p.IsActive))
                                 {
                                     <option value="@pack.Id">@pack.DisplayName</option>
                                 }
                             </InputSelect>
-                            @if (!PackSelectedValid)
-                            {
-                                <div class="invalid-feedback">Нужно выбрать пак</div>
-                            }
                         </div>
                         @if (!string.IsNullOrEmpty(_errorsInProgress))
                         {
@@ -85,26 +76,15 @@
 
 @code {
     private HubConnection? _hubConnection;
+    private CreateLobbyModel _lobbyModel = new();
+    private EditContext? _editContext;
     private bool _progress;
-    private string _displayName = string.Empty;
-    private int _playersCount;
-    private int _ratingChange;
-    private string _password = string.Empty;
-    private long? _fileId;
     private string _errorsInProgress = string.Empty;
     private List<GamePackDtoModel> _packs = [];
-
-    private bool PasswordValid => string.IsNullOrEmpty(_password) ||
-                                  _password.Length is >= 6 and <= 16;
-
-    private bool PackSelectedValid => _fileId is > 0;
 
     [Parameter] public bool Open { get; set; }
 
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
-
-    private string GetDisplayNameClass() => _displayName.Length is >= 4 and <= 255 ? "form-control" : "form-control is-invalid";
-    private string GetPasswordClass() => PasswordValid ? "form-control" : "form-control is-invalid";
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,6 +92,7 @@
         {
             _progress = true;
             _errorsInProgress = string.Empty;
+            _editContext = new EditContext(_lobbyModel);
             StateHasChanged();
 
             using var response = await Http.GetAsync("/api/v1/gamepack/all?active=true");
@@ -120,7 +101,7 @@
             _packs = (await JsonSerializer.DeserializeAsync<List<GamePackDtoModel>>(await response.Content.ReadAsStreamAsync()))!;
 
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl($"{Configuration["ApiUrl"]}/gamepackhub", options => 
+                .WithUrl($"{Configuration["ApiUrl"]}/gamepackhub", options =>
                 {
                     options.SkipNegotiation = false;
                     options.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
@@ -131,10 +112,7 @@
                     TimeSpan.FromSeconds(5),
                     TimeSpan.FromSeconds(10)
                 ])
-                .ConfigureLogging(logging => 
-                {
-                    logging.SetMinimumLevel(LogLevel.Information);
-                })
+                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Information); })
                 .Build();
 
             _hubConnection.On<GamePackDtoModel>("GamePackCreated", pack =>
@@ -186,27 +164,30 @@
     {
         try
         {
+            if (_editContext == null || !_editContext.Validate())
+            {
+                // Модель не валидна, показываем ошибки
+                return;
+            }
+
             _progress = true;
             _errorsInProgress = string.Empty;
             StateHasChanged();
 
-            if (!PasswordValid || _displayName.Length is < 4 or > 255 || !_fileId.HasValue) return;
-
-            var (playerCount, ratingChange) = 
-                (ushort.Parse(_playersCount.ToString()), ushort.Parse(_ratingChange.ToString()));
-
             using var response = await Http.PutAsync(
-                "/api/v1/lobbies/all",
+                "/api/v1/lobbies",
                 new LobbyDtoModel
                 {
-                    DisplayName = _displayName,
-                    Password = _password,
-                    Conditions = _ratingChange > 0 ? [LobbyCondition.Rating] : [],
-                    PlayersCount = playerCount,
-                    RatingChange = ratingChange,
-                    GamePackId = _fileId.Value
+                    DisplayName = _lobbyModel.DisplayName,
+                    Password = _lobbyModel.Password,
+                    Conditions = _lobbyModel.RatingChange > 0 ? [LobbyCondition.Rating] : [],
+                    PlayersCount = (ushort)_lobbyModel.PlayersCount,
+                    RatingChange = (ushort)_lobbyModel.RatingChange,
+                    GamePackId = _lobbyModel.PackId
                 });
             response.EnsureSuccessStatusCode();
+            _lobbyModel = new CreateLobbyModel();
+            _editContext = new EditContext(_lobbyModel);
 
             await OpenChanged.InvokeAsync(false);
         }
@@ -236,6 +217,26 @@
         {
             await _hubConnection.DisposeAsync();
         }
+    }
+
+    private class CreateLobbyModel
+    {
+        [Range(0, 100, ErrorMessage = "Рейтинг должен быть от 0 до 100")]
+        public int RatingChange { get; set; }
+
+        [Range(2, 10, ErrorMessage = "Число игроков должно быть от 2 до 10")]
+        public int PlayersCount { get; set; }
+
+        [MinLength(6, ErrorMessage = "Пароль должен быть более 6 символов"),
+         MaxLength(16, ErrorMessage = "Пароль должен быть не более 16 символов")]
+        public string Password { get; set; } = string.Empty;
+
+        [MinLength(4, ErrorMessage = "Название должно быть более 4 символов"),
+         MaxLength(255, ErrorMessage = "Название должно быть не более 255 символов")]
+        public string DisplayName { get; set; } = string.Empty;
+
+        [Range(1, long.MaxValue, ErrorMessage = "Необходимо выбрать пак")]
+        public long PackId { get; set; }
     }
 
 }
